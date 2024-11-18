@@ -19,7 +19,6 @@ const createWindow = (): void => {
         },
     });
     mainWindow.loadFile('./src/views/index.html');
-
     mainWindow.maximize();
 
     mainWindow.webContents.openDevTools();
