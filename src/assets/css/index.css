@@ -1,8 +1,13 @@
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica,
-        Arial, sans-serif;
+    Arial, sans-serif;
     margin: auto;
-    max-width: 38rem;
+    min-width: 100vw;
+    min-height: 100vh;
+    overflow: hidden;
     padding: 2rem;
-    background-color: violet;
+    background-size: cover;
+    background: linear-gradient(to bottom right, #051c2a, #44315f) no-repeat;
+    border-radius: 5px;
+    color: white;
 }
