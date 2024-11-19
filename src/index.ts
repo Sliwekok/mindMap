@@ -15,7 +15,9 @@ const createWindow = (): void => {
         height: (1080 / 2),
         width: (1920 / 2),
         webPreferences: {
-            preload: path.join(__dirname, 'preload.js')
+            preload: path.join(__dirname, 'preload.js'),
+            nodeIntegration: true,
+            contextIsolation: false
         },
     });
     mainWindow.loadFile('./src/views/index.html');

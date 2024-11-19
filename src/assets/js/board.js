@@ -1,63 +1,87 @@
-$(document).ready(function () {
-    let zoomLevel = 2; // Initial zoom level
-    const minZoom = 0.7; // Minimum zoom (50% of original size)
-    const maxZoom = 5; // Maximum zoom (300% of original size)
-    const zoomStep = 0.1; // Step size for each zoom level change
-    const board = $("#board");
-    const content = $("#boardContent");
-    let isPanning = false; // Flag to check if panning is active
-    let startX, startY; // Starting coordinates for panning
-    let currentX = 0, currentY = 0; // Current translation values
-    const speedModifier = 1 / zoomLevel;
+const THREE = require('three');
 
-    board.on('wheel', function (event) {
-        if (event.ctrlKey) {
-            event.preventDefault(); // Prevent default behavior like page zooming
-            const delta = event.originalEvent.deltaY;
+const content = document.querySelector('#boardContent');
+if (content) {
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    content .appendChild(renderer.domElement);
 
-            // Adjust the zoom level
-            if (delta < 0) {
-                // Scroll up -> zoom in
-                zoomLevel += zoomStep;
-            } else {
-                // Scroll down -> zoom out
-                zoomLevel -= zoomStep;
+// Set initial camera position
+    camera.position.z = 20;
+    const panFactor = 0.02;
+
+// Add a simple cube as a placeholder for board content
+    const geometry = new THREE.BoxGeometry(5, 5, 0);
+    const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+    const box = new THREE.Mesh(geometry, material);
+    scene.add(box);
+
+// Define zoom levels
+    const zoomLevels = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0];
+    let currentZoomIndex = 1;
+    camera.zoom = zoomLevels[currentZoomIndex];
+    camera.updateProjectionMatrix();
+
+// Smooth transition settings
+    let targetZoom = camera.zoom;
+    const zoomSpeed = 0.1;
+    const zoomFactor = 1 / camera.zoom; // Lower zoom factor for higher zoom levels (higher zoom = slower panning)
+
+// Variables for panning
+    let isPanning = false;
+    let panStart = new THREE.Vector2();
+    let panOffset = new THREE.Vector2();
+
+// Handle zooming using the mouse wheel (steps)
+    window.addEventListener('wheel', (event) => {
+        if (event.deltaY < 0) {
+            // Zoom in
+            if (currentZoomIndex < zoomLevels.length - 1) {
+                currentZoomIndex++;
             }
-
-            // Constrain zoom level within the limits
-            zoomLevel = Math.max(minZoom, Math.min(maxZoom, zoomLevel));
-
-            // Apply transform to the content
-            content.css('transform', `scale(${zoomLevel}) translate(${currentX}px, ${currentY}px)`);
+        } else {
+            // Zoom out
+            if (currentZoomIndex > 0) {
+                currentZoomIndex--;
+            }
         }
+        targetZoom = zoomLevels[currentZoomIndex];
     });
 
-    // Panning functionality
-    board.on('mousedown', function (event) {
-        if (event.ctrlKey && event.which === 1) { // Check if Ctrl key and left mouse button are pressed
+// Handle panning when holding the Ctrl key and dragging with the left mouse button
+    renderer.domElement.addEventListener('mousedown', (event) => {
+        if (event.ctrlKey) {
             isPanning = true;
-            startX = event.pageX - currentX; // Calculate starting x-coordinate
-            startY = event.pageY - currentY; // Calculate starting y-coordinate
-            $(this).css('cursor', 'grabbing'); // Change cursor to indicate panning
-            event.preventDefault(); // Prevent default drag behavior
+            panStart.set(event.clientX, event.clientY);
         }
     });
 
-    $(document).on('mousemove', function (event) {
+    renderer.domElement.addEventListener('mousemove', (event) => {
         if (isPanning) {
-            // Calculate new translation values
-            currentX = (event.pageX - startX) * speedModifier;
-            currentY = (event.pageY - startY) * speedModifier;
+            const panDelta = new THREE.Vector2(event.clientX, event.clientY).sub(panStart);
+            camera.position.x -= panDelta.x * panFactor * zoomFactor;
+            camera.position.y += panDelta.y * panFactor * zoomFactor;
 
-            // Apply translation while preserving the zoom scale
-            content.css('transform', `scale(${zoomLevel}) translate(${currentX}px, ${currentY}px)`);
+            panStart.set(event.clientX, event.clientY);
         }
     });
 
-    $(document).on('mouseup', function () {
-        if (isPanning) {
-            isPanning = false;
-            board.css('cursor', 'default'); // Reset cursor
-        }
+    renderer.domElement.addEventListener('mouseup', () => {
+        isPanning = false;
     });
-});
+
+// Animation loop
+    function animate() {
+        requestAnimationFrame(animate);
+
+        // Smooth zoom transition
+        camera.zoom += (targetZoom - camera.zoom) * zoomSpeed;
+        camera.updateProjectionMatrix();
+
+        renderer.render(scene, camera);
+    }
+    animate();
+
+}
