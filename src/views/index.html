@@ -2,14 +2,35 @@
 <html>
   <head>
     <meta charset="UTF-8" />
-    <title>Hello World!</title>
-    <!-- <script src="./assets/js/main.js"></script> -->
-    <link href="../assets/css/index.css"  rel="stylesheet">
+    <title>Mind map</title>
+    <script src="../assets/js/jquery.js"></script>
+    <script src="../assets/js/main.js"></script>
+    <link href="../assets/css/main.css"  rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="../resources/icon.png">
 
   </head>
   <body>
-    <h1>💖 Hello World!</h1>
-    <p>Welcome to your Electron application.</p>
-    <a href="about.html">test</a>
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-12 d-inline-flex" id="index">
+          <div class="col-4 offset-3">
+            <div class="col-6 pt-1 pb-1 mb-2">
+              <a href="board.html" class="btn btn-outline-primary col-12 subTitle" id="createNewFile"><i class="demo-icon icon-doc-new">Create new</i></a>
+            </div>
+            <div class="col-6">
+              <p class="btn btn-outline-primary col-12 subTitle mt-3"><i class="demo-icon icon-download">Load from file</i></p>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="col-12">
+              <p class="subTitle">Load previous files</p>
+              <div class="previousFiles col-12">
+
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </body>
 </html>

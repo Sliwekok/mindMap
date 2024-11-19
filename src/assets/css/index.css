@@ -1,13 +1,3 @@
-body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica,
-    Arial, sans-serif;
-    margin: auto;
-    min-width: 100vw;
-    min-height: 100vh;
-    overflow: hidden;
-    padding: 2rem;
-    background-size: cover;
-    background: linear-gradient(to bottom right, #051c2a, #44315f) no-repeat;
-    border-radius: 5px;
-    color: white;
+#index{
+    margin-top: 15.5%;
 }
