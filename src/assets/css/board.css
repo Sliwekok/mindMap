@@ -14,3 +14,24 @@
     background-size: 40px 40px;
     position: absolute;
 }
+
+
+.sekcja {
+    width: 100%;
+    background: white;
+    border: solid 1px silver;
+    margin-bottom: 15px;
+    border-radius: 5px;
+}
+
+.sekcja-head {
+    background: var(--primary);
+    color: white;
+    padding: 10px 15px 10px 15px;
+    font-size: 1.5em;
+}
+
+.sekcja-body {
+    background: white;
+    padding: 15px;
+}
