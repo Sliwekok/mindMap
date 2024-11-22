@@ -149,6 +149,7 @@ class Board {
         if (event.ctrlKey) {
             this.isPanning = true;
             this.lastMousePosition = { x: event.clientX, y: event.clientY };
+            this.content.style.cursor = 'grab';
         }
     }
 
@@ -190,16 +191,18 @@ class Board {
 
     endPan() {
         this.isPanning = false;
+        this.content.style.cursor = 'default';
     }
 
 
     addCard() {
         let form = document.createElement("div");
         form.id = "card_" + this.cardCounter;
-        form.class = 'card';
-        form.innerHTML = `<form><p><h2>title</h2></p><p>contet content content</p></form>`
-        form.style.width = '200px';
-        form.style.height = '200px';
+        form.classList.add('card');
+        form.classList.add('sekcja');
+        form.innerHTML = `<div class="sekcja-head">title</div><div class="sekcja-body"><p>contet content content</p></div>`
+        form.style.width = 'fit-content';
+        form.style.height = 'fit-content';
         form.style.position = 'relative';
         form.style.userSelect = 'none';
         form.style.zIndex = '10';

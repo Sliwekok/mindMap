@@ -14,11 +14,11 @@
 }
 
 .sekcja {
-    width: 100%;
     background: white;
     border: solid 1px silver;
     margin-bottom: 15px;
     border-radius: 5px;
+
 }
 
 .sekcja-head {
@@ -31,4 +31,8 @@
 .sekcja-body {
     background: white;
     padding: 15px;
+}
+
+input[type="text"], textarea {
+    border: 1px;
 }
