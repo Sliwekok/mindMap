@@ -5,21 +5,22 @@ class Board {
             throw new Error(`Element with selector "${selector}" not found.`);
         }
 
-        this.movementSensitivity = 3;
-        this.zoomLevel = 2; // Initial zoom level
         this.currentZoomIndex = 10;
-        this.isPanning = false; // Flag to check if panning is active
-        this.position = {x: 0, y: 0};
-        this.maxPosition = {x: 1000, y:1000}; // max content width and height
-        this.speedModifier = this.calcMovementSpeed();
         this.zoomLevels = [
             0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0,
         ];
+        this.zoomLevel = this.zoomLevels[this.currentZoomIndex]; // Initial zoom level
+        this.isPanning = false; // Flag to check if panning is active
+        this.position = {x: 0, y: 0};
+        this.maxPosition = {x: 1000, y:1000}; // max content width and height
+        this.movementSensitivity = 3;
+        this.speedModifier = this.calcMovementSpeed();
         this.cardCounter = 0;
 
         this.init();
 
-        this.addEventListeners();    }
+        this.addEventListeners();
+    }
 
     init() {
         /* add content */
@@ -49,10 +50,23 @@ class Board {
     }
 
     addEventListeners() {
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Control' && !this.isControlPressed) {
+                this.isControlPressed = true;
+                this.startPan(event); // Start panning on Ctrl press
+            }
+        });
+
+        document.addEventListener('keyup', (event) => {
+            if (event.key === 'Control' && this.isControlPressed) {
+                this.isControlPressed = false;
+                this.endPan(); // End panning on Ctrl release
+            }
+        });
         // Handle zooming
         this.board.addEventListener('wheel', this.handleZoom.bind(this));
         // Handle panning
-        this.board.addEventListener('mousedown', this.startPan.bind(this));
+        this.board.ctrlKey
         this.board.addEventListener('mousemove', this.pan.bind(this));
         this.board.addEventListener('mouseup', this.endPan.bind(this));
         this.board.addEventListener('mouseout', this.endPan.bind(this));
@@ -89,7 +103,7 @@ class Board {
     }
 
     pan(event) {
-        if (this.isPanning) {
+        if (this.isPanning && (event.buttons && 1)) {  // Check if the left mouse button is held down (bit 1)
             // Calculate deltas for mouse movement (invert direction)
             const panDeltaX = (this.lastMousePosition.x - event.clientX) * this.speedModifier;
             const panDeltaY = (this.lastMousePosition.y - event.clientY) * this.speedModifier;
@@ -138,6 +152,7 @@ class Board {
         form.style.height = '200px';
         form.style.position = 'relative';
         form.style.userSelect = 'none';
+        form.style.zIndex = '10';
         this.content.appendChild(form);
         this.cardCounter++;
     }
