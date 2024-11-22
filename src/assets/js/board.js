@@ -5,12 +5,13 @@ class Board {
             throw new Error(`Element with selector "${selector}" not found.`);
         }
 
+        this.movementSensitivity = 3;
         this.zoomLevel = 2; // Initial zoom level
         this.currentZoomIndex = 10;
         this.isPanning = false; // Flag to check if panning is active
         this.position = {x: 0, y: 0};
         this.maxPosition = {x: 1000, y:1000}; // max content width and height
-        this.speedModifier = 3 / this.zoomLevel;
+        this.speedModifier = this.calcMovementSpeed();
         this.zoomLevels = [
             0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0,
         ];
@@ -57,6 +58,10 @@ class Board {
         this.board.addEventListener('mouseout', this.endPan.bind(this));
     }
 
+    calcMovementSpeed() {
+        return  this.movementSensitivity / this.zoomLevel;
+    }
+
     handleZoom(event) {
         if (this.isPanning) {
             if (event.deltaY < 0) {
@@ -70,8 +75,9 @@ class Board {
                     this.currentZoomIndex--;
                 }
             }
+            console.log(this.zoomLevel, this.currentZoomIndex);
             this.zoomLevel = this.zoomLevels[this.currentZoomIndex];
-            this.speedModifier = 0.1 / this.zoomLevel;
+            this.speedModifier =  calcMovementSpeed;
         }
     }
 
