@@ -33,6 +33,7 @@ class Board {
         content.style.userSelect = 'none';
         content.style.top = '0px';
         content.style.left = '0px';
+        content.style.transition = 'transform 0.2s ease';
         this.board.appendChild(content);
         this.content = content;
         /* end add content */
@@ -77,22 +78,50 @@ class Board {
     }
 
     handleZoom(event) {
-        if (this.isPanning) {
-            if (event.deltaY < 0) {
-                // Zoom in
-                if (this.currentZoomIndex < this.zoomLevels.length - 1) {
-                    this.currentZoomIndex++;
-                }
-            } else {
-                // Zoom out
-                if (this.currentZoomIndex > 0) {
-                    this.currentZoomIndex--;
-                }
-            }
-            console.log(this.zoomLevel, this.currentZoomIndex);
-            this.zoomLevel = this.zoomLevels[this.currentZoomIndex];
-            this.speedModifier =  this.calcMovementSpeed();
+        let zoomChange = 0;
+
+        // Determine zoom direction based on scroll direction
+        if (event.deltaY < 0) {
+            zoomChange = 1; // Zoom in
+        } else if (event.deltaY > 0) {
+            zoomChange = -1; // Zoom out
         }
+
+        // Update the zoom index based on the zoom direction
+        this.currentZoomIndex += zoomChange;
+
+        // Ensure the zoom index stays within valid range
+        this.currentZoomIndex = Math.max(0, Math.min(this.currentZoomIndex, this.zoomLevels.length - 1));
+
+        // Get the new zoom level based on the index
+        const newZoomLevel = this.zoomLevels[this.currentZoomIndex];
+
+        // Calculate the scale difference between the new zoom level and the current zoom level
+        const scaleDifference = newZoomLevel / this.zoomLevel;
+
+        // Get mouse position relative to the board
+        const mouseX = event.clientX - this.board.offsetLeft;
+        const mouseY = event.clientY - this.board.offsetTop;
+
+        // Update the zoom level and adjust the content's scale
+        this.zoomLevel = newZoomLevel;
+        this.content.style.transform = `scale(${this.zoomLevel})`;
+
+        // Adjust the content position so the zoom happens around the cursor
+        const newLeft = this.content.offsetLeft - (mouseX * (scaleDifference - 1));
+        const newTop = this.content.offsetTop - (mouseY * (scaleDifference - 1));
+
+        // Clamp the new positions within boundaries
+        const maxLeft = 0;
+        const minLeft = -this.maxPosition.x * this.zoomLevel + this.board.offsetWidth;
+        const maxTop = 0;
+        const minTop = -this.maxPosition.y * this.zoomLevel + this.board.offsetHeight;
+
+        // Apply the clamped positions to ensure the content doesn't overflow
+        requestAnimationFrame(() => {
+            this.content.style.left = `${Math.min(maxLeft, Math.max(minLeft, newLeft))}px`;
+            this.content.style.top = `${Math.min(maxTop, Math.max(minTop, newTop))}px`;
+        });
     }
 
     startPan(event) {
@@ -116,7 +145,7 @@ class Board {
             const newLeft = currentLeft - panDeltaX;
             const newTop = currentTop - panDeltaY;
 
-            // Clamping boundaries
+            // Clamping boundaries to prevent overflow
             const maxLeft = 0;
             const minLeft = -this.maxPosition.x * this.zoomLevel + this.board.offsetWidth;
 
