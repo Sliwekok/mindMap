@@ -13,16 +13,6 @@
     background-size: 20px 20px;
 }
 
-#boardContent {
-    width: 1000px; /* Large size for virtual board */
-    height: 1000px; /* Large size for virtual board */
-    transform-origin: top left; /* Transform relative to top-left */
-    position: relative; /* Positioning context */
-    top: 200px;
-    left: 200px;
-    user-select: none;
-}
-
 .sekcja {
     width: 100%;
     background: white;

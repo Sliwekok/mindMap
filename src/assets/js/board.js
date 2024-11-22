@@ -5,7 +5,6 @@ class Board {
             throw new Error(`Element with selector "${selector}" not found.`);
         }
 
-        this.content = document.querySelector('#boardContent');
         this.zoomLevel = 2; // Initial zoom level
         this.minZoom = 0.7;
         this.maxZoom = 5;
@@ -13,12 +12,35 @@ class Board {
         this.currentZoomIndex = 10;
         this.isPanning = false; // Flag to check if panning is active
         this.position = {x: 0, y: 0};
+        this.maxPosition = {x: 1000, y:1000}; // max content width and height
         this.speedModifier = 1 / this.zoomLevel;
         this.zoomLevels = [
             0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0,
         ];
 
+        this.init();
+
         this.addEventListeners();
+        console.log(this.content);
+    }
+
+    init() {
+        /* add content */
+        let content = document.createElement("div");
+        content.id = "boardContent";
+        content.style.width = this.maxPosition.x.toString() + 'px';
+        content.style.height = this.maxPosition.y.toString() + 'px';
+        content.style.transformOrigin = 'top left';
+        content.style.position = 'relative';
+        content.style.userSelect = 'none';
+        this.board.appendChild(content);
+        this.content = content;
+        /* end add content */
+        /* set current position */
+        let rect = this.board.getBoundingClientRect();
+        this.position.x = (rect.left + rect.width / 2) / this.zoomLevel;
+        this.position.y = (rect.top + rect.height / 2) / this.zoomLevel;
+        /* end current position */
     }
 
     addEventListeners() {
