@@ -6,9 +6,6 @@ class Board {
         }
 
         this.zoomLevel = 2; // Initial zoom level
-        this.minZoom = 0.7;
-        this.maxZoom = 5;
-        this.zoomStep = 1; // Step size for each zoom level change
         this.currentZoomIndex = 10;
         this.isPanning = false; // Flag to check if panning is active
         this.position = {x: 0, y: 0};
@@ -17,12 +14,11 @@ class Board {
         this.zoomLevels = [
             0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0,
         ];
+        this.cardCounter = 0;
 
         this.init();
 
-        this.addEventListeners();
-        console.log(this.content);
-    }
+        this.addEventListeners();    }
 
     init() {
         /* add content */
@@ -33,14 +29,22 @@ class Board {
         content.style.transformOrigin = 'top left';
         content.style.position = 'relative';
         content.style.userSelect = 'none';
+        content.style.top = '0px';
+        content.style.left = '0px';
         this.board.appendChild(content);
         this.content = content;
         /* end add content */
-        /* set current position */
+        /* set current position to the center*/
         let rect = this.board.getBoundingClientRect();
         this.position.x = (rect.left + rect.width / 2) / this.zoomLevel;
         this.position.y = (rect.top + rect.height / 2) / this.zoomLevel;
         /* end current position */
+
+        /* count current cards */
+        this.cardCounter = this.content.querySelectorAll('.card').length;
+
+        /* add card if no cards */
+        if (this.cardCounter == 0) this.addCard();
     }
 
     addEventListeners() {
@@ -67,38 +71,66 @@ class Board {
                 }
             }
             this.zoomLevel = this.zoomLevels[this.currentZoomIndex];
+            this.speedModifier = 0.1 / this.zoomLevel;
         }
     }
 
     startPan(event) {
         if (event.ctrlKey) {
             this.isPanning = true;
+            this.lastMousePosition = { x: event.clientX, y: event.clientY };
         }
     }
+
     pan(event) {
         if (this.isPanning) {
-            // Calculate how much the mouse has moved since the start
-            const panDeltaX = event.clientX - this.position.x;
-            const panDeltaY = event.clientY - this.position.y;
+            const panDeltaX = (event.clientX - this.lastMousePosition.x) * this.speedModifier;
+            const panDeltaY = (event.clientY - this.lastMousePosition.y) * this.speedModifier;
 
-            // Update the div's position based on the pan delta
-            this.content.style.left = (this.content.offsetLeft - panDeltaX * this.speedModifier) + 'px';
-            this.content.style.top = (this.content.offsetTop - panDeltaY * this.speedModifier) + 'px';
+            // Calculate new positions
+            const newLeft = this.content.offsetLeft - panDeltaX;
+            const newTop = this.content.offsetTop - panDeltaY;
 
-            // Update the starting position for the next movement
-            this.position.x = this.position.x + panDeltaX;
-            this.position.y = this.position.y + panDeltaY;
+            // Calculate clamping boundaries
+            const maxLeft = 0;
+            const minLeft = -this.maxPosition.x * this.zoomLevel + this.board.offsetWidth;
 
-            console.log(this.position);
+            const maxTop = 0;
+            const minTop = -this.maxPosition.y * this.zoomLevel + this.board.offsetHeight;
+
+            // Correctly clamp values
+            const clampedLeft = Math.min(maxLeft, Math.max(minLeft, newLeft));
+            const clampedTop = Math.min(maxTop, Math.max(minTop, newTop));
+
+            console.log({ minLeft, maxLeft, newLeft, minTop, maxTop, newTop, clampedLeft, clampedTop });
+
+            // Apply clamped values
+            requestAnimationFrame(() => {
+                this.content.style.left = `${clampedLeft}px`;
+                this.content.style.top = `${clampedTop}px`;
+            });
+
+            // Update last mouse position
+            this.lastMousePosition = { x: event.clientX, y: event.clientY };
         }
     }
+
     endPan() {
         this.isPanning = false;
     }
 
 
     addCard() {
-        return 1;
+        let form = document.createElement("div");
+        form.id = "card_" + this.cardCounter;
+        form.class = 'card';
+        form.innerHTML = `<form><p><h2>title</h2></p><p>contet content content</p></form>`
+        form.style.width = '200px';
+        form.style.height = '200px';
+        form.style.position = 'relative';
+        form.style.userSelect = 'none';
+        this.content.appendChild(form);
+        this.cardCounter++;
     }
 }
 
