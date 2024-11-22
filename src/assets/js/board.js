@@ -77,7 +77,7 @@ class Board {
             }
             console.log(this.zoomLevel, this.currentZoomIndex);
             this.zoomLevel = this.zoomLevels[this.currentZoomIndex];
-            this.speedModifier =  calcMovementSpeed;
+            this.speedModifier =  calcMovementSpeed();
         }
     }
 
