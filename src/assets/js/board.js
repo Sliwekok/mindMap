@@ -12,7 +12,7 @@ class Board {
         this.zoomLevel = this.zoomLevels[this.currentZoomIndex]; // Initial zoom level
         this.isPanning = false; // Flag to check if panning is active
         this.position = {x: 0, y: 0};
-        this.maxPosition = {x: 1000, y:1000}; // max content width and height
+        this.maxPosition = this.maxResolution(); // max content width and height
         this.movementSensitivity = 3;
         this.speedModifier = this.calcMovementSpeed();
         this.cardCounter = 0;
@@ -48,6 +48,27 @@ class Board {
 
         /* add card if no cards */
         if (this.cardCounter === 0) this.addCard();
+    }
+
+    maxResolution() {
+        const screenWidth = window.innerWidth;
+        const screenHeight = window.innerHeight;
+
+        // Aspect ratio (from your image)
+        const aspectRatio = screenWidth / screenHeight;  // Based on your image (width / height)
+
+        // Calculate maximum width and height based on the aspect ratio
+        const maxBoardHeight = screenHeight;
+        const maxBoardWidth = screenHeight * aspectRatio;
+
+        // Apply zoom level (assuming zoomed out to minimum zoom level)
+        const zoomLevel = this.zoomLevels[0];
+
+        // Adjust the resolution based on the zoom level
+        const finalWidth = maxBoardWidth / zoomLevel;
+        const finalHeight = maxBoardHeight / zoomLevel;
+
+        return { x: finalWidth, y: finalHeight };
     }
 
     addEventListeners() {
