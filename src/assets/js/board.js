@@ -10,7 +10,7 @@ class Board {
         this.isPanning = false; // Flag to check if panning is active
         this.position = {x: 0, y: 0};
         this.maxPosition = {x: 1000, y:1000}; // max content width and height
-        this.speedModifier = 1 / this.zoomLevel;
+        this.speedModifier = 3 / this.zoomLevel;
         this.zoomLevels = [
             0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0,
         ];
@@ -44,7 +44,7 @@ class Board {
         this.cardCounter = this.content.querySelectorAll('.card').length;
 
         /* add card if no cards */
-        if (this.cardCounter == 0) this.addCard();
+        if (this.cardCounter === 0) this.addCard();
     }
 
     addEventListeners() {
@@ -84,33 +84,36 @@ class Board {
 
     pan(event) {
         if (this.isPanning) {
-            const panDeltaX = (event.clientX - this.lastMousePosition.x) * this.speedModifier;
-            const panDeltaY = (event.clientY - this.lastMousePosition.y) * this.speedModifier;
+            // Calculate deltas for mouse movement (invert direction)
+            const panDeltaX = (this.lastMousePosition.x - event.clientX) * this.speedModifier;
+            const panDeltaY = (this.lastMousePosition.y - event.clientY) * this.speedModifier;
 
-            // Calculate new positions
-            const newLeft = this.content.offsetLeft - panDeltaX;
-            const newTop = this.content.offsetTop - panDeltaY;
+            // Current position of the content
+            const currentLeft = parseFloat(this.content.style.left) || 0;
+            const currentTop = parseFloat(this.content.style.top) || 0;
 
-            // Calculate clamping boundaries
+            // New positions after applying deltas
+            const newLeft = currentLeft - panDeltaX;
+            const newTop = currentTop - panDeltaY;
+
+            // Clamping boundaries
             const maxLeft = 0;
             const minLeft = -this.maxPosition.x * this.zoomLevel + this.board.offsetWidth;
 
             const maxTop = 0;
             const minTop = -this.maxPosition.y * this.zoomLevel + this.board.offsetHeight;
 
-            // Correctly clamp values
+            // Clamp the new positions within boundaries
             const clampedLeft = Math.min(maxLeft, Math.max(minLeft, newLeft));
             const clampedTop = Math.min(maxTop, Math.max(minTop, newTop));
 
-            console.log({ minLeft, maxLeft, newLeft, minTop, maxTop, newTop, clampedLeft, clampedTop });
-
-            // Apply clamped values
+            // Apply the clamped values
             requestAnimationFrame(() => {
                 this.content.style.left = `${clampedLeft}px`;
                 this.content.style.top = `${clampedTop}px`;
             });
 
-            // Update last mouse position
+            // Update the last mouse position
             this.lastMousePosition = { x: event.clientX, y: event.clientY };
         }
     }
