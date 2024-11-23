@@ -16,6 +16,7 @@ class Board {
         this.movementSensitivity = 3;
         this.speedModifier = this.calcMovementSpeed();
         this.cardCounter = 0;
+        this.maxCardWidth = 500;
 
         this.init();
 
@@ -33,10 +34,10 @@ class Board {
         content.style.userSelect = 'none';
         content.style.top = '0px';
         content.style.left = '0px';
-        content.style.transition = 'transform 0.2s ease';
         this.board.appendChild(content);
         this.content = content;
         /* end add content */
+
         /* set current position to the center*/
         let rect = this.board.getBoundingClientRect();
         this.position.x = (rect.left + rect.width / 2) / this.zoomLevel;
@@ -78,7 +79,6 @@ class Board {
                 this.startPan(event); // Start panning on Ctrl press
             }
         });
-
         document.addEventListener('keyup', (event) => {
             if (event.key === 'Control' && this.isControlPressed) {
                 this.isControlPressed = false;
@@ -92,6 +92,100 @@ class Board {
         this.board.addEventListener('mousemove', this.pan.bind(this));
         this.board.addEventListener('mouseup', this.endPan.bind(this));
         this.board.addEventListener('mouseout', this.endPan.bind(this));
+        // Make each card draggable
+        this.board.addEventListener('mousedown', (event) => {
+            const card = event.target.closest('.card');
+            if (card) {
+                this.startDrag(event, card);
+            }
+        });
+        this.board.addEventListener('mousemove', (event) => {
+            if (this.isDragging && this.currentCard) {
+                this.drag(event);
+            }
+        });
+
+        this.board.addEventListener('mouseup', () => {
+            if (this.isDragging) {
+                this.endDrag();
+            }
+        });
+
+        this.board.querySelector('.card-content').addEventListener('keydown', (event) => {
+            this.setNewTextareaSize(event.target);
+        });
+
+        this.board.querySelector('.card-content').addEventListener('paste', (event) => {
+            // Delay the size adjustment until after the paste content is inserted
+            setTimeout(() => this.setNewTextareaSize(event.target), 0);        });
+    }
+
+    setNewTextareaSize(textarea) {
+        const maxWidth = this.maxCardWidth;
+        const minWidth = 200;
+
+        // Create a temporary span to measure text width
+        const span = document.createElement('span');
+        span.style.visibility = 'hidden';
+        span.style.whiteSpace = 'pre';
+        span.style.font = window.getComputedStyle(textarea).font;
+        span.textContent = textarea.value || textarea.placeholder || "";
+        document.body.appendChild(span);
+
+        const contentWidth = span.offsetWidth + 10;
+        document.body.removeChild(span);
+
+        // Adjust width and height based on content size
+        if (contentWidth <= maxWidth) {
+            textarea.style.width = `${Math.max(contentWidth, minWidth)}px`;
+            textarea.style.height = 'auto';
+        } else {
+            textarea.style.width = `${maxWidth}px`;
+            textarea.style.height = 'auto';
+            textarea.style.height = `${textarea.scrollHeight}px`;
+        }
+    }
+
+    startDrag(event, card) {
+        if (event.ctrlKey) {
+            this.isDragging = true;
+            this.currentCard = card;
+
+            // Get the bounding rectangles
+            const cardRect = card.getBoundingClientRect();
+            const boardRect = this.board.getBoundingClientRect();
+
+            // Calculate the card's position relative to the board
+            const cardLeft = (cardRect.left - boardRect.left) / this.zoomLevel;
+            const cardTop = (cardRect.top - boardRect.top) / this.zoomLevel;
+
+            // Set the card's position to absolute with these calculated values
+            card.style.position = 'absolute';
+            card.style.left = `${cardLeft}px`;
+            card.style.top = `${cardTop}px`;
+
+            // Calculate the mouse offset relative to the card
+            this.offsetX = (event.clientX - cardRect.left) / this.zoomLevel;
+            this.offsetY = (event.clientY - cardRect.top) / this.zoomLevel;
+        }
+    }
+
+    drag(event) {
+        if (this.isDragging && this.currentCard) {
+            // Calculate the new card position relative to the board
+            const boardRect = this.board.getBoundingClientRect();
+            const newLeft = (event.clientX - boardRect.left) / this.zoomLevel - this.offsetX;
+            const newTop = (event.clientY - boardRect.top) / this.zoomLevel - this.offsetY;
+
+            // Apply the new position to the card
+            this.currentCard.style.left = `${newLeft}px`;
+            this.currentCard.style.top = `${newTop}px`;
+        }
+    }
+
+    endDrag() {
+        this.isDragging = false;
+        this.currentCard = null;
     }
 
     calcMovementSpeed() {
@@ -99,50 +193,52 @@ class Board {
     }
 
     handleZoom(event) {
-        let zoomChange = 0;
+        if (event.ctrlKey) {
+            let zoomChange = 0;
 
-        // Determine zoom direction based on scroll direction
-        if (event.deltaY < 0) {
-            zoomChange = 1; // Zoom in
-        } else if (event.deltaY > 0) {
-            zoomChange = -1; // Zoom out
+            // Determine zoom direction based on scroll direction
+            if (event.deltaY < 0) {
+                zoomChange = 1; // Zoom in
+            } else if (event.deltaY > 0) {
+                zoomChange = -1; // Zoom out
+            }
+
+            // Update the zoom index based on the zoom direction
+            this.currentZoomIndex += zoomChange;
+
+            // Ensure the zoom index stays within valid range
+            this.currentZoomIndex = Math.max(0, Math.min(this.currentZoomIndex, this.zoomLevels.length - 1));
+
+            // Get the new zoom level based on the index
+            const newZoomLevel = this.zoomLevels[this.currentZoomIndex];
+
+            // Calculate the scale difference between the new zoom level and the current zoom level
+            const scaleDifference = newZoomLevel / this.zoomLevel;
+
+            // Get mouse position relative to the board
+            const mouseX = event.clientX - this.board.offsetLeft;
+            const mouseY = event.clientY - this.board.offsetTop;
+
+            // Update the zoom level and adjust the content's scale
+            this.zoomLevel = newZoomLevel;
+            this.content.style.transform = `scale(${this.zoomLevel})`;
+
+            // Adjust the content position so the zoom happens around the cursor
+            const newLeft = this.content.offsetLeft - (mouseX * (scaleDifference - 1));
+            const newTop = this.content.offsetTop - (mouseY * (scaleDifference - 1));
+
+            // Clamp the new positions within boundaries
+            const maxLeft = 0;
+            const minLeft = -this.maxPosition.x * this.zoomLevel + this.board.offsetWidth;
+            const maxTop = 0;
+            const minTop = -this.maxPosition.y * this.zoomLevel + this.board.offsetHeight;
+
+            // Apply the clamped positions to ensure the content doesn't overflow
+            requestAnimationFrame(() => {
+                this.content.style.left = `${Math.min(maxLeft, Math.max(minLeft, newLeft))}px`;
+                this.content.style.top = `${Math.min(maxTop, Math.max(minTop, newTop))}px`;
+            });
         }
-
-        // Update the zoom index based on the zoom direction
-        this.currentZoomIndex += zoomChange;
-
-        // Ensure the zoom index stays within valid range
-        this.currentZoomIndex = Math.max(0, Math.min(this.currentZoomIndex, this.zoomLevels.length - 1));
-
-        // Get the new zoom level based on the index
-        const newZoomLevel = this.zoomLevels[this.currentZoomIndex];
-
-        // Calculate the scale difference between the new zoom level and the current zoom level
-        const scaleDifference = newZoomLevel / this.zoomLevel;
-
-        // Get mouse position relative to the board
-        const mouseX = event.clientX - this.board.offsetLeft;
-        const mouseY = event.clientY - this.board.offsetTop;
-
-        // Update the zoom level and adjust the content's scale
-        this.zoomLevel = newZoomLevel;
-        this.content.style.transform = `scale(${this.zoomLevel})`;
-
-        // Adjust the content position so the zoom happens around the cursor
-        const newLeft = this.content.offsetLeft - (mouseX * (scaleDifference - 1));
-        const newTop = this.content.offsetTop - (mouseY * (scaleDifference - 1));
-
-        // Clamp the new positions within boundaries
-        const maxLeft = 0;
-        const minLeft = -this.maxPosition.x * this.zoomLevel + this.board.offsetWidth;
-        const maxTop = 0;
-        const minTop = -this.maxPosition.y * this.zoomLevel + this.board.offsetHeight;
-
-        // Apply the clamped positions to ensure the content doesn't overflow
-        requestAnimationFrame(() => {
-            this.content.style.left = `${Math.min(maxLeft, Math.max(minLeft, newLeft))}px`;
-            this.content.style.top = `${Math.min(maxTop, Math.max(minTop, newTop))}px`;
-        });
     }
 
     startPan(event) {
@@ -200,11 +296,12 @@ class Board {
         form.id = "card_" + this.cardCounter;
         form.classList.add('card');
         form.classList.add('sekcja');
-        form.innerHTML = `<div class="sekcja-head">title</div><div class="sekcja-body"><p>contet content content</p></div>`
+        form.innerHTML = `<div class="sekcja-head"><textarea rows="2" type="text" placeholder="Title..."></textarea><p class="delete"><i class="icon-cancel"></i></p></div><div class="sekcja-body"><textarea type="text" class="card-content" placeholder="Content..."></textarea></div>`
         form.style.width = 'fit-content';
         form.style.height = 'fit-content';
         form.style.position = 'relative';
         form.style.userSelect = 'none';
+        form.style.maxWidth = this.maxCardWidth + 'px';
         form.style.zIndex = '10';
         this.content.appendChild(form);
         this.cardCounter++;
