@@ -15,10 +15,11 @@ class Board {
         this.maxPosition = this.maxResolution(); // max content width and height
         this.movementSensitivity = 3;
         this.speedModifier = this.calcMovementSpeed();
-        this.cardCounter = 0;
+        this.cards = [];
         this.maxCardWidth = 500;
         this.relations = [];
         this.selectedCard = null;
+        this.defaultCardColor = '#3399ff';
 
         this.init();
         this.addEventListeners();
@@ -45,11 +46,12 @@ class Board {
         this.position.y = (rect.top + rect.height / 2) / this.zoomLevel;
         /* end current position */
 
-        /* count current cards */
-        this.cardCounter = this.content.querySelectorAll('.card').length;
-
         /* add card if no cards */
-        if (this.cardCounter === 0) this.addCard();
+        if (this.cards.length === 0) {
+            this.addCard();
+        } else {
+            this.cards = this.content.querySelectorAll('.card');
+        }
 
         this.addSvgLines();
     }
@@ -90,17 +92,20 @@ class Board {
     }
 
     addEventListeners() {
-        document.addEventListener('keydown', (event) => {
+        this.board.addEventListener('keydown', (event) => {
             if (event.key === 'Control' && !this.isControlPressed) {
                 this.isControlPressed = true;
                 this.startPan(event); // Start panning on Ctrl press
             }
         });
-        document.addEventListener('keyup', (event) => {
+        this.board.addEventListener('keyup', (event) => {
             if (event.key === 'Control' && this.isControlPressed) {
                 this.isControlPressed = false;
                 this.endPan(); // End panning on Ctrl release
             }
+
+            this.updateNavCardSelector();
+
         });
         // Handle zooming
         this.board.addEventListener('wheel', this.handleZoom.bind(this));
@@ -359,11 +364,16 @@ class Board {
 
 
     addCard() {
-        let form = document.createElement("div");
-        form.id = "card_" + this.cardCounter;
-        form.classList.add('card');
-        form.classList.add('sekcja');
-        form.innerHTML = `
+        let card = document.createElement("div");
+        const highestId = this.cards.reduce((max, card) => {
+            const match = card.id;
+            const id = card.id ? parseInt(match[1], 10) : 0; // Extract and parse or default to 0
+            return Math.max(max, id);
+        }, 0);
+        card.id = "card_" + (highestId + 1);
+        card.classList.add('card');
+        card.classList.add('sekcja');
+        card.innerHTML = `
             <div class="sekcja-head">
                 <p class="link"><i class="icon-switch"></i></p>
                 <textarea class="card-textarea-title" rows="2" type="text" placeholder="Title..."></textarea>
@@ -373,16 +383,18 @@ class Board {
                 <textarea type="text" class="card-content" placeholder="Content..."></textarea>
             </div>
         `;
-        form.style.width = 'fit-content';
-        form.style.height = 'fit-content';
-        form.style.position = 'absolute'; // Ensure absolute positioning to set coordinates
-        form.style.userSelect = 'none';
-        form.style.maxWidth = this.maxCardWidth + 'px';
-        form.style.zIndex = '10';
+        card.style.width = 'fit-content';
+        card.style.height = 'fit-content';
+        card.style.position = 'absolute'; // Ensure absolute positioning to set coordinates
+        card.style.userSelect = 'none';
+        card.style.maxWidth = this.maxCardWidth + 'px';
+        card.style.zIndex = '10';
 
         // Temporarily add the card to measure its size
-        this.content.appendChild(form);
-        const cardRect = form.getBoundingClientRect();
+        this.content.appendChild(card);
+        const cardRect = card.getBoundingClientRect();
+
+        card.querySelector('.sekcja-head').style.background = this.defaultCardColor;
 
         // Calculate the center position
         const boardRect = this.board.getBoundingClientRect(); // Board dimensions
@@ -397,10 +409,25 @@ class Board {
             (boardRect.height / 2 + boardRect.top - contentRect.top) / this.zoomLevel -
             cardRect.height / 2;
 
-        form.style.left = `${centerX}px`;
-        form.style.top = `${centerY}px`;
+        card.style.left = `${centerX}px`;
+        card.style.top = `${centerY}px`;
 
-        this.cardCounter++;
+        const cardOptions = {
+            'id': highestId + 1,
+            'styles': {
+                'top': centerY,
+                'left': centerX,
+                'background-color': this.defaultCardColor
+            },
+            'content': {
+                'title': '',
+                'text': ''
+            },
+            'misc' : card
+        }
+
+        this.cards.push(cardOptions);
+        this.updateNavCardSelector();
     }
 
     deleteCard(event) {
@@ -412,6 +439,8 @@ class Board {
 
         // Remove all lines associated with the card
         this.removeRelation(card);
+
+        this.updateNavCardSelector();
     }
 
     createLine(card1, card2) {
@@ -478,7 +507,32 @@ class Board {
         }
     }
 
+    updateNavCardSelector() {
+        const selector = document.querySelector('#card-selector');
+        selector.innerHTML = '<option value="-">-</option>'; // delete all options in selector
+        this.cards.forEach(card => {
+            let title = card.misc.querySelector('.card-textarea-title').value;
+            selector.innerHTML += `
+                <option value="${card.id}">${title}</option>
+            `;
+        });
+    }
+
+    updateCardBackgroundColor(card, color) {
+        card = this.content.querySelector('#card_' + card);
+        card.querySelector('.sekcja-head').style.background = color;
+    }
 }
 
 const board = new Board('#board');
-document.getElementById('addCard').addEventListener('click', () => board.addCard());
+document.querySelector('#addCard').addEventListener('click', () => board.addCard());
+document.querySelector('#card-change-color').addEventListener('change', () => {
+    const color = document.querySelector('#card-change-color').value;
+    const card = document.querySelector('#card-selector');
+    if (card.value === '') {
+        alert('Choose a card first');
+
+        return false;
+    }
+    board.updateCardBackgroundColor(card.value, color);
+});

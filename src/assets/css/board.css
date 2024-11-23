@@ -20,11 +20,6 @@
     }
 }
 
-:root
-{
-    --primary: #3399ff;
-}
-
 #board {
     width: 85vw;
     height: 90vh;
@@ -43,7 +38,6 @@
     position: relative;
 
     .sekcja-head {
-        background: var(--primary);
         color: white;
         padding: 10px 15px 10px 15px;
         font-size: 1.5em;
@@ -113,4 +107,10 @@
             color: black;
         }
     }
+}
+
+.form-control{
+    background-color: transparent;
+    color: white;
+    border: none;
 }
