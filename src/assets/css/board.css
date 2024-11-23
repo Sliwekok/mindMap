@@ -30,7 +30,7 @@
         flex-wrap: wrap;
 
         textarea {
-            width: 95%;
+            width: 90%;
             background-color: transparent;
             outline: none;
             color: white;
@@ -48,7 +48,8 @@
             background-color: transparent;
             border: 0px;
             cursor: pointer;
-            width: 5%;
+            width: 10%;
+            text-align: center;
         }
     }
 
