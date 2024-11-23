@@ -143,10 +143,19 @@ class Board {
             setTimeout(() => this.setNewTextareaSize(event.target), 0);
         });
 
+        // add card linking and relations
         this.board.addEventListener('click', (event) => {
             const linkIcon = event.target.closest('.link');
             if (linkIcon) {
                 this.addLink(event);
+            }
+        });
+
+        // delete card
+        this.board.addEventListener('click', (event) => {
+            const button = event.target.closest('.delete');
+            if (button && confirm('Are you sure you want to delete this card?') === true) {
+                this.deleteCard(event);
             }
         });
     }
@@ -394,6 +403,17 @@ class Board {
         this.cardCounter++;
     }
 
+    deleteCard(event) {
+        const card = event.target.closest('.card');
+        // Remove the card from the DOM
+        if (card && card.parentNode) {
+            card.parentNode.removeChild(card);
+        }
+
+        // Remove all lines associated with the card
+        this.removeRelation(card);
+    }
+
     createLine(card1, card2) {
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
         line.setAttribute("stroke", "red");
@@ -436,6 +456,27 @@ class Board {
         });
     }
 
+    removeRelation(card) {
+        // Filter out relations that involve the specified card
+        const remainingRelations = [];
+        this.relations.forEach(relation => {
+            if (relation.card1 === card || relation.card2 === card) {
+                // Remove the SVG line element from the DOM
+                this.deleteLine(relation.line);
+            } else {
+                remainingRelations.push(relation);
+            }
+        });
+
+        // Update the relations array
+        this.relations = remainingRelations;
+    }
+
+    deleteLine(line) {
+        if (line && line.parentNode) {
+            line.parentNode.removeChild(line);
+        }
+    }
 
 }
 
