@@ -113,18 +113,24 @@ class Board {
         this.board.addEventListener('mousedown', (event) => {
             const card = event.target.closest('.card');
             if (card) {
+                // update lines to prevent from loosing track
+                this.updateAllLines();
                 this.startDrag(event, card);
             }
         });
         this.board.addEventListener('mousemove', (event) => {
             if (this.isDragging && this.currentCard) {
                 this.drag(event);
+                // update lines to prevent from loosing track
+                this.updateAllLines();
             }
         });
 
         this.board.addEventListener('mouseup', () => {
             if (this.isDragging) {
                 this.endDrag();
+                // update lines to prevent from loosing track
+                this.updateAllLines();
             }
         });
 
@@ -286,6 +292,8 @@ class Board {
                 this.content.style.left = `${Math.min(maxLeft, Math.max(minLeft, newLeft))}px`;
                 this.content.style.top = `${Math.min(maxTop, Math.max(minTop, newTop))}px`;
             });
+            // update lines to prevent from loosing track
+            this.updateAllLines()
         }
     }
 
@@ -330,6 +338,8 @@ class Board {
 
             // Update the last mouse position
             this.lastMousePosition = { x: event.clientX, y: event.clientY };
+            // update lines to prevent from loosing track
+            this.updateAllLines()
         }
     }
 
