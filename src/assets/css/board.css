@@ -18,21 +18,57 @@
     border: solid 1px silver;
     margin-bottom: 15px;
     border-radius: 5px;
+    position: relative;
 
-}
+    .sekcja-head {
+        background: var(--primary);
+        color: white;
+        padding: 10px 15px 10px 15px;
+        font-size: 1.5em;
+        width: 100%;
+        display: inline-flex;
+        flex-wrap: wrap;
 
-.sekcja-head {
-    background: var(--primary);
-    color: white;
-    padding: 10px 15px 10px 15px;
-    font-size: 1.5em;
-}
+        textarea {
+            width: 95%;
+            background-color: transparent;
+            outline: none;
+            color: white;
+            border: none;
+            overflow: hidden;
+            resize: none;
+        }
+        textarea::placeholder{
+            color: white;
+        }
 
-.sekcja-body {
-    background: white;
-    padding: 15px;
-}
+        .delete{
+            display: block;
+            color: red;
+            background-color: transparent;
+            border: 0px;
+            cursor: pointer;
+            width: 5%;
+        }
+    }
 
-input[type="text"], textarea {
-    border: 1px;
+    .sekcja-body {
+        background: white;
+        padding: 15px;
+
+        textarea {
+            width: 95%;
+            background-color: transparent;
+            outline: none;
+            color: black;
+            border: none;
+            overflow: hidden;
+            resize: none;
+            margin-right: 15px;
+            padding-right: 15px;
+        }
+        textarea::placeholder{
+            color: black;
+        }
+    }
 }
