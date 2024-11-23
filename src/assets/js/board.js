@@ -17,9 +17,10 @@ class Board {
         this.speedModifier = this.calcMovementSpeed();
         this.cardCounter = 0;
         this.maxCardWidth = 500;
+        this.relations = [];
+        this.selectedCard = null;
 
         this.init();
-
         this.addEventListeners();
     }
 
@@ -49,6 +50,22 @@ class Board {
 
         /* add card if no cards */
         if (this.cardCounter === 0) this.addCard();
+
+        this.addSvgLines();
+    }
+
+    addSvgLines() {
+        let svgContainer = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        svgContainer.id = "lineContainer";
+        svgContainer.style.position = "absolute";
+        svgContainer.style.top = "0";
+        svgContainer.style.left = "0";
+        svgContainer.style.width = "100%";
+        svgContainer.style.height = "100%";
+        svgContainer.style.pointerEvents = "none"; // Allow clicks to pass through
+        svgContainer.style.zIndex = "1"; // Place it under the cards
+        this.content.appendChild(svgContainer);
+        this.svgContainer = svgContainer;
     }
 
     maxResolution() {
@@ -120,14 +137,33 @@ class Board {
             setTimeout(() => this.setNewTextareaSize(event.target), 0);
         });
 
-        this.board.querySelector('.link').addEventListener('click', this.addLink.bind(this));
+        this.board.addEventListener('click', (event) => {
+            const linkIcon = event.target.closest('.link');
+            if (linkIcon) {
+                this.addLink(event);
+            }
+        });
     }
 
     addLink(event) {
-        // const card = event.target.parentNode.parentNode.parentNode;
+        // Identify the card that was clicked
+        const icon = event.target;
+        const card = event.target.closest('.card');
 
-        // this.content.style.cursor = 'pointer';
-
+        if (!this.selectedCard) {
+            // If no card is selected, store this card as the first card
+            this.selectedCard = card;
+            icon.parentNode.classList.add('linking'); // Optionally highlight the card
+        } else {
+            // If a card is already selected, create a link to this card
+            this.createLine(this.selectedCard, card);
+            // Clear the selected card and remove highlighting
+            const linkingElements = this.board.querySelectorAll('.linking');
+            linkingElements.forEach(element => {
+                element.classList.remove('linking');
+            });
+            this.selectedCard = null;
+        }
     }
 
     setNewTextareaSize(textarea) {
@@ -190,6 +226,8 @@ class Board {
             // Apply the new position to the card
             this.currentCard.style.left = `${newLeft}px`;
             this.currentCard.style.top = `${newTop}px`;
+
+            this.updateAllLines();
         }
     }
 
@@ -345,6 +383,49 @@ class Board {
 
         this.cardCounter++;
     }
+
+    createLine(card1, card2) {
+        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        line.setAttribute("stroke", "red");
+        line.setAttribute("stroke-width", "4");
+        this.svgContainer.appendChild(line);
+
+        const updateLinePosition = () => {
+            const rect1 = card1.getBoundingClientRect();
+            const rect2 = card2.getBoundingClientRect();
+
+            const x1 = (rect1.left + rect1.width / 2) - this.board.getBoundingClientRect().left;
+            const y1 = (rect1.top + rect1.height / 2) - this.board.getBoundingClientRect().top;
+
+            const x2 = (rect2.left + rect2.width / 2) - this.board.getBoundingClientRect().left;
+            const y2 = (rect2.top + rect2.height / 2) - this.board.getBoundingClientRect().top;
+
+            line.setAttribute("x1", x1 / this.zoomLevel);
+            line.setAttribute("y1", y1 / this.zoomLevel);
+            line.setAttribute("x2", x2 / this.zoomLevel);
+            line.setAttribute("y2", y2 / this.zoomLevel);
+        };
+
+        // Initial position
+        updateLinePosition();
+
+        // Add the line and related cards to the relations registry
+        this.relations.push({ line, card1, card2, updateLinePosition });
+
+        // Return the line for further handling if needed
+        return line;
+    }
+
+    updateAllLines() {
+        if (this.isUpdatingLines) return; // Prevent multiple calls
+        this.isUpdatingLines = true;
+
+        requestAnimationFrame(() => {
+            this.relations.forEach(relation => relation.updateLinePosition());
+            this.isUpdatingLines = false;
+        });
+    }
+
 
 }
 

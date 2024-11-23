@@ -1,3 +1,25 @@
+@keyframes breathing {
+    0% {
+        transform: scale(1);
+    }
+
+    25% {
+        transform: scale(1.1);
+    }
+
+    50% {
+        transform: scale(1);
+    }
+
+    75% {
+        transform: scale(0.9);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
 :root
 {
     --primary: #3399ff;
@@ -65,6 +87,10 @@
             cursor: pointer;
             width: 10%;
             text-align: left;
+        }
+
+        .link.linking {
+            animation: breathing 2s ease-out infinite normal;
         }
     }
 
