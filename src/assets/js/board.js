@@ -117,7 +117,17 @@ class Board {
 
         this.board.querySelector('.card-content').addEventListener('paste', (event) => {
             // Delay the size adjustment until after the paste content is inserted
-            setTimeout(() => this.setNewTextareaSize(event.target), 0);        });
+            setTimeout(() => this.setNewTextareaSize(event.target), 0);
+        });
+
+        this.board.querySelector('.link').addEventListener('click', this.addLink.bind(this));
+    }
+
+    addLink(event) {
+        // const card = event.target.parentNode.parentNode.parentNode;
+
+        // this.content.style.cursor = 'pointer';
+
     }
 
     setNewTextareaSize(textarea) {
@@ -296,16 +306,46 @@ class Board {
         form.id = "card_" + this.cardCounter;
         form.classList.add('card');
         form.classList.add('sekcja');
-        form.innerHTML = `<div class="sekcja-head"><textarea rows="2" type="text" placeholder="Title..."></textarea><p class="delete"><i class="icon-cancel"></i></p></div><div class="sekcja-body"><textarea type="text" class="card-content" placeholder="Content..."></textarea></div>`
+        form.innerHTML = `
+            <div class="sekcja-head">
+                <p class="link"><i class="icon-switch"></i></p>
+                <textarea class="card-textarea-title" rows="2" type="text" placeholder="Title..."></textarea>
+                <p class="delete"><i class="icon-cancel"></i></p>
+            </div>
+            <div class="sekcja-body">
+                <textarea type="text" class="card-content" placeholder="Content..."></textarea>
+            </div>
+        `;
         form.style.width = 'fit-content';
         form.style.height = 'fit-content';
-        form.style.position = 'relative';
+        form.style.position = 'absolute'; // Ensure absolute positioning to set coordinates
         form.style.userSelect = 'none';
         form.style.maxWidth = this.maxCardWidth + 'px';
         form.style.zIndex = '10';
+
+        // Temporarily add the card to measure its size
         this.content.appendChild(form);
+        const cardRect = form.getBoundingClientRect();
+
+        // Calculate the center position
+        const boardRect = this.board.getBoundingClientRect(); // Board dimensions
+        const contentRect = this.content.getBoundingClientRect(); // Content dimensions
+
+        // Adjust for zoom and card width
+        const centerX =
+            (boardRect.width / 2 + boardRect.left - contentRect.left) / this.zoomLevel -
+            cardRect.width / 2;
+
+        const centerY =
+            (boardRect.height / 2 + boardRect.top - contentRect.top) / this.zoomLevel -
+            cardRect.height / 2;
+
+        form.style.left = `${centerX}px`;
+        form.style.top = `${centerY}px`;
+
         this.cardCounter++;
     }
+
 }
 
 const board = new Board('#board');
