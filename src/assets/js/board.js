@@ -2,7 +2,7 @@
 // const fs = require('fs');
 
 class Board {
-    constructor(selector) {
+    constructor(selector, size) {
         this.board = document.querySelector(selector);
         if (!this.board) {
             throw new Error(`Element with selector "${selector}" not found.`);
@@ -12,10 +12,11 @@ class Board {
         this.zoomLevels = [
             0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0,
         ];
+        this.size = size;
         this.zoomLevel = this.zoomLevels[this.currentZoomIndex]; // Initial zoom level
         this.isPanning = false; // Flag to check if panning is active
         this.position = {x: 0, y: 0};
-        this.maxPosition = this.maxResolution(); // max content width and height
+        this.maxPosition = this.maxResolution(size); // max content width and height
         this.movementSensitivity = 3;
         this.speedModifier = this.calcMovementSpeed();
         this.cards = [];
@@ -73,9 +74,9 @@ class Board {
         this.svgContainer = svgContainer;
     }
 
-    maxResolution() {
-        const screenWidth = window.innerWidth;
-        const screenHeight = window.innerHeight;
+    maxResolution(size) {
+        const screenWidth = this.board.getBoundingClientRect().width;
+        const screenHeight = this.board.getBoundingClientRect().height;
 
         // Aspect ratio (from your image)
         const aspectRatio = screenWidth / screenHeight;  // Based on your image (width / height)
@@ -87,15 +88,24 @@ class Board {
         // Apply zoom level (assuming zoomed out to minimum zoom level)
         const zoomLevel = this.zoomLevels[0];
 
-        // Adjust the resolution based on the zoom level
-        const finalWidth = maxBoardWidth / zoomLevel;
-        const finalHeight = maxBoardHeight / zoomLevel;
+        // Adjust the resolution based on the zoom level and size
+        let sizeModificator = 0;
+        switch (size) {
+            case 'small': sizeModificator = 0.25; break;
+            case 'medium': sizeModificator = 0.5; break;
+            case 'large': sizeModificator = 0.75; break;
+            case 'very-large': sizeModificator = 1; break;
+        }
+
+        const finalWidth = (maxBoardWidth / zoomLevel) * sizeModificator;
+        const finalHeight = (maxBoardHeight / zoomLevel) * sizeModificator;
 
         return { x: finalWidth, y: finalHeight };
     }
 
     addEventListeners() {
         this.board.addEventListener('keydown', (event) => {
+            console.log('Key pressed:', event.key, event.code);  // Log key and code
             if (event.key === 'Control' && !this.isControlPressed) {
                 this.isControlPressed = true;
                 this.startPan(event); // Start panning on Ctrl press
@@ -165,6 +175,19 @@ class Board {
             if (button && confirm('Are you sure you want to delete this card?') === true) {
                 this.deleteCard(event);
             }
+        });
+
+        // save typed new values in cards
+        this.board.querySelectorAll('.card textarea').forEach((textarea) => {
+            textarea.addEventListener('input', (event) => {
+                const cardChanged = textarea.parentNode.parentNode;
+                const cardChangedId = cardChanged.id.replace('card_', '');
+                if (textarea.classList.contains('card-textarea-title')) {
+                    this.cards.find(card => card.id.toString() === cardChangedId).content.title = textarea.value;
+                } else {
+                    this.cards.find(card => card.id.toString() === cardChangedId).content.text = textarea.value;
+                }
+            });
         });
     }
 
@@ -274,14 +297,30 @@ class Board {
                 zoomChange = -1; // Zoom out
             }
 
-            // Update the zoom index based on the zoom direction
-            this.currentZoomIndex += zoomChange;
+            // Calculate the new zoom index
+            const newZoomIndex = this.currentZoomIndex + zoomChange;
 
             // Ensure the zoom index stays within valid range
-            this.currentZoomIndex = Math.max(0, Math.min(this.currentZoomIndex, this.zoomLevels.length - 1));
+            if (newZoomIndex < 0 || newZoomIndex >= this.zoomLevels.length) {
+                return; // Prevent invalid zoom level
+            }
 
-            // Get the new zoom level based on the index
-            const newZoomLevel = this.zoomLevels[this.currentZoomIndex];
+            // Get the proposed new zoom level
+            const newZoomLevel = this.zoomLevels[newZoomIndex];
+
+            // Check if zooming out would violate the minimum resolution
+            if (zoomChange === -1) { // Zooming out
+                const minResolution = this.maxPosition;
+                const proposedWidth = this.board.offsetWidth / newZoomLevel;
+                const proposedHeight = this.board.offsetHeight / newZoomLevel;
+                // Prevent zooming out if it violates the minimum resolution
+                if (proposedWidth > minResolution.x || proposedHeight > minResolution.y) {
+                    return;
+                }
+            }
+
+            // Update the zoom index
+            this.currentZoomIndex = newZoomIndex;
 
             // Calculate the scale difference between the new zoom level and the current zoom level
             const scaleDifference = newZoomLevel / this.zoomLevel;
@@ -309,10 +348,12 @@ class Board {
                 this.content.style.left = `${Math.min(maxLeft, Math.max(minLeft, newLeft))}px`;
                 this.content.style.top = `${Math.min(maxTop, Math.max(minTop, newTop))}px`;
             });
-            // update lines to prevent from loosing track
-            this.updateAllLines()
+
+            // Update lines to prevent from losing track
+            this.updateAllLines();
         }
     }
+
 
     startPan(event) {
         if (event.ctrlKey) {
@@ -526,43 +567,35 @@ class Board {
         card.querySelector('.sekcja-head').style.background = color;
     }
 
-    // saveBoard() {
-    //     const boardState = {
-    //         zoomLevel: this.zoomLevel,
-    //         cards: this.cards.map(card => ({
-    //             id: card.id,
-    //             styles: card.styles,
-    //             content: card.content,
-    //         })),
-    //         relations: this.relations.map(relation => ({
-    //             card1Id: relation.card1.id,
-    //             card2Id: relation.card2.id,
-    //         })),
-    //     };
-    //
-    //     const boardStateJson = JSON.stringify(boardState, null, 2);
-    //
-    //     dialog
-    //         .showSaveDialog({
-    //             title: 'Save Board',
-    //             defaultPath: 'board.json',
-    //             filters: [{ name: 'JSON Files', extensions: ['json'] }],
-    //         })
-    //         .then(({ filePath }) => {
-    //             if (filePath) {
-    //                 fs.writeFileSync(filePath, boardStateJson, 'utf-8');
-    //                 alert('Board saved successfully!');
-    //             }
-    //         });
-    // }
+    getBoardProperties() {
+        const boardState = {
+            zoomLevel: this.zoomLevel,
+            position: this.position,
+            maxPosition: this.maxPosition,
+            size: this.size,
+            cards: this.cards,
+            relations: this.relations
+        };
+
+        return JSON.stringify(boardState, null, 2);
+    }
+
+    updateMapSize(size) {
+        this.size = size;
+        this.maxPosition = this.maxResolution(size);
+        console.log(this.maxPosition)
+    }
+
 }
 
 
-const board = new Board('#board');
+const size = document.querySelector('#map-size');
+const board = new Board('#board', size.value);
 document.querySelector('#addCard').addEventListener('click', () => board.addCard());
 document.querySelector('#card-change-color').addEventListener('change', () => {
     const color = document.querySelector('#card-change-color').value;
-    const card = document.querySelector('#card-selector');
+    const card = document.querySelector('#card-selector')
+    const boardData = board.getBoardProperties();
     if (card.value === '') {
         alert('Choose a card first');
 
@@ -582,7 +615,7 @@ document.getElementById('save').addEventListener('click', async () => {
         title: 'Save your map',
         defaultPath: title + '.json',
         filters: [
-            { name: 'Text Files', extensions: ['txt'] },
+            { name: 'JSON Files', extensions: ['json'] },
             { name: 'All Files', extensions: ['*'] },
         ],
     });
@@ -593,3 +626,5 @@ document.getElementById('save').addEventListener('click', async () => {
         console.log('Save operation was canceled.');
     }
 });
+
+size.addEventListener('change', () => board.updateMapSize(size.value));

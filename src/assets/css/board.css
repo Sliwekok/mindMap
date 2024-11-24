@@ -26,8 +26,11 @@
     overflow: hidden;
     position: relative;
     transform-origin: center;
-    background: radial-gradient(circle, #ccc 1px, transparent 1px);
-    background-size: 20px 20px;
+
+    #boardContent {
+        background: radial-gradient(circle, #ccc 5px, transparent 5px);
+        background-size: 70px 70px;
+    }
 }
 
 .sekcja {
