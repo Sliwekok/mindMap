@@ -105,7 +105,6 @@ class Board {
 
     addEventListeners() {
         this.board.addEventListener('keydown', (event) => {
-            console.log('Key pressed:', event.key, event.code);  // Log key and code
             if (event.key === 'Control' && !this.isControlPressed) {
                 this.isControlPressed = true;
                 this.startPan(event); // Start panning on Ctrl press
@@ -583,7 +582,6 @@ class Board {
     updateMapSize(size) {
         this.size = size;
         this.maxPosition = this.maxResolution(size);
-        console.log(this.maxPosition)
     }
 
 }
@@ -608,9 +606,9 @@ document.getElementById('save').addEventListener('click', async () => {
     const title = document.querySelector('#map-title').value;
     if (title === '') {
         alert('Name your map first!');
-
         return false;
     }
+
     const result = await window.electronAPI.saveFile({
         title: 'Save your map',
         defaultPath: title + '.json',
@@ -621,9 +619,12 @@ document.getElementById('save').addEventListener('click', async () => {
     });
 
     if (!result.canceled) {
-        console.log('File path selected for saving:', result.filePath);
-    } else {
-        console.log('Save operation was canceled.');
+        const content = {
+            title: title,
+            data: board.getBoardProperties(),
+        };
+
+        window.electronAPI.saveContentToFile(result.filePath, content);
     }
 });
 
