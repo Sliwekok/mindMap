@@ -3,7 +3,7 @@
   "productName": "mind-map",
   "version": "1.0.0",
   "description": "Mind map that helps you standarize your knowledge",
-  "main": ".webpack/main",
+  "main": ".webpack/main/main.js",
   "scripts": {
     "start": "electron-forge start",
     "package": "electron-forge package",

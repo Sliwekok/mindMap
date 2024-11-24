@@ -15,6 +15,24 @@
     <div class="main d-inline-flex">
       <div class="col-2" id="sideNav">
         <div class="col-12">
+          <div class="col-12">
+            <div class="col-12">
+              <p class="subTitle">Map</p>
+            </div>
+            <div class="form-control">
+              <label for="map-title" class="form-label">Map name</label>
+              <input class="col-12" type="text" id="map-title" placeholder="Map title...">
+            </div>
+            <div class="form-control">
+              <label for="map-size" class="form-label">Map size</label>
+              <select id="map-size" class="col-12 form-select">
+                <option value="small">Small</option>
+                <option value="medium" selected>Medium</option>
+                <option value="large">Large</option>
+                <option value="very-large">Very large</option>
+              </select>
+            </div>
+          </div>
           <p class="subTitle">Cards</p>
           <div class="col-12">
             <p id="addCard" class="btn btn-outline-primary">Add card</p>
@@ -36,6 +54,11 @@
               </div>
             </div>
           </div>
+        </div>
+        <div class="col-12" id="file-management">
+          <button id="save" class="btn btn-outline-primary">
+            save
+          </button>
         </div>
       </div>
       <div id="board"></div>

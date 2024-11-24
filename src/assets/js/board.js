@@ -1,3 +1,6 @@
+// const { dialog } = require('electron');
+// const fs = require('fs');
+
 class Board {
     constructor(selector) {
         this.board = document.querySelector(selector);
@@ -509,7 +512,7 @@ class Board {
 
     updateNavCardSelector() {
         const selector = document.querySelector('#card-selector');
-        selector.innerHTML = '<option value="-">-</option>'; // delete all options in selector
+        selector.innerHTML = '<option value="">-</option>'; // delete all options in selector
         this.cards.forEach(card => {
             let title = card.misc.querySelector('.card-textarea-title').value;
             selector.innerHTML += `
@@ -522,7 +525,38 @@ class Board {
         card = this.content.querySelector('#card_' + card);
         card.querySelector('.sekcja-head').style.background = color;
     }
+
+    // saveBoard() {
+    //     const boardState = {
+    //         zoomLevel: this.zoomLevel,
+    //         cards: this.cards.map(card => ({
+    //             id: card.id,
+    //             styles: card.styles,
+    //             content: card.content,
+    //         })),
+    //         relations: this.relations.map(relation => ({
+    //             card1Id: relation.card1.id,
+    //             card2Id: relation.card2.id,
+    //         })),
+    //     };
+    //
+    //     const boardStateJson = JSON.stringify(boardState, null, 2);
+    //
+    //     dialog
+    //         .showSaveDialog({
+    //             title: 'Save Board',
+    //             defaultPath: 'board.json',
+    //             filters: [{ name: 'JSON Files', extensions: ['json'] }],
+    //         })
+    //         .then(({ filePath }) => {
+    //             if (filePath) {
+    //                 fs.writeFileSync(filePath, boardStateJson, 'utf-8');
+    //                 alert('Board saved successfully!');
+    //             }
+    //         });
+    // }
 }
+
 
 const board = new Board('#board');
 document.querySelector('#addCard').addEventListener('click', () => board.addCard());
@@ -535,4 +569,27 @@ document.querySelector('#card-change-color').addEventListener('change', () => {
         return false;
     }
     board.updateCardBackgroundColor(card.value, color);
+});
+
+document.getElementById('save').addEventListener('click', async () => {
+    const title = document.querySelector('#map-title').value;
+    if (title === '') {
+        alert('Name your map first!');
+
+        return false;
+    }
+    const result = await window.electronAPI.saveFile({
+        title: 'Save your map',
+        defaultPath: title + '.json',
+        filters: [
+            { name: 'Text Files', extensions: ['txt'] },
+            { name: 'All Files', extensions: ['*'] },
+        ],
+    });
+
+    if (!result.canceled) {
+        console.log('File path selected for saving:', result.filePath);
+    } else {
+        console.log('Save operation was canceled.');
+    }
 });

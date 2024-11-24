@@ -109,8 +109,14 @@
     }
 }
 
-.form-control{
+.form-control {
     background-color: transparent;
     color: white;
     border: none;
+}
+
+#file-management {
+    position: relative;
+    top: 30%;
+    bottom: 10px;
 }
