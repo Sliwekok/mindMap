@@ -1,6 +1,3 @@
-// const { dialog } = require('electron');
-// const fs = require('fs');
-
 class Board {
     constructor(selector, size) {
         this.board = document.querySelector(selector);
@@ -566,17 +563,19 @@ class Board {
         card.querySelector('.sekcja-head').style.background = color;
     }
 
-    getBoardProperties() {
+    getBoardProperties(title) {
         const boardState = {
             zoomLevel: this.zoomLevel,
             position: this.position,
             maxPosition: this.maxPosition,
             size: this.size,
             cards: this.cards,
-            relations: this.relations
+            relations: this.relations,
+            title: title,
+            date: new Date().toISOString().replace('T', ' ').slice(0, 19), // date in Y-m-d H:i:s format
         };
 
-        return JSON.stringify(boardState, null, 2);
+        return boardState;
     }
 
     updateMapSize(size) {
@@ -585,47 +584,53 @@ class Board {
     }
 
 }
+if (document.querySelector('#board')) {
+    const size = document.querySelector('#map-size');
+    const board = new Board('#board', size.value);
+    document.querySelector('#addCard').addEventListener('click', () => board.addCard());
+    document.querySelector('#card-change-color').addEventListener('change', () => {
+        const color = document.querySelector('#card-change-color').value;
+        const card = document.querySelector('#card-selector')
+        if (card.value === '') {
+            alert('Choose a card first');
 
-
-const size = document.querySelector('#map-size');
-const board = new Board('#board', size.value);
-document.querySelector('#addCard').addEventListener('click', () => board.addCard());
-document.querySelector('#card-change-color').addEventListener('change', () => {
-    const color = document.querySelector('#card-change-color').value;
-    const card = document.querySelector('#card-selector')
-    const boardData = board.getBoardProperties();
-    if (card.value === '') {
-        alert('Choose a card first');
-
-        return false;
-    }
-    board.updateCardBackgroundColor(card.value, color);
-});
-
-document.getElementById('save').addEventListener('click', async () => {
-    const title = document.querySelector('#map-title').value;
-    if (title === '') {
-        alert('Name your map first!');
-        return false;
-    }
-
-    const result = await window.electronAPI.saveFile({
-        title: 'Save your map',
-        defaultPath: title + '.json',
-        filters: [
-            { name: 'JSON Files', extensions: ['json'] },
-            { name: 'All Files', extensions: ['*'] },
-        ],
+            return false;
+        }
+        board.updateCardBackgroundColor(card.value, color);
     });
 
-    if (!result.canceled) {
-        const content = {
-            title: title,
-            data: board.getBoardProperties(),
-        };
+    document.querySelector('#save').addEventListener('click', async () => {
+        const title = document.querySelector('#map-title').value;
+        if (title === '') {
+            alert('Name your map first!');
+            return false;
+        }
 
-        window.electronAPI.saveContentToFile(result.filePath, content);
-    }
-});
+        const result = await window.electronAPI.saveFile({
+            title: 'Save your map',
+            defaultPath: title + '.json',
+            filters: [
+                {name: 'JSON Files', extensions: ['json']},
+                {name: 'All Files', extensions: ['*']},
+            ],
+        });
 
-size.addEventListener('change', () => board.updateMapSize(size.value));
+        if (!result.canceled) {
+            const boardProperties = board.getBoardProperties(title);
+            const content = {
+                title: title,
+                data: boardProperties,
+            };
+
+            window.electronAPI  .saveContentToFile(result.filePath, content);
+            // Get the saved boards from localStorage or initialize as an empty array if not found
+            let savedBoards = JSON.parse(localStorage.getItem('savedBoards') || '[]');
+            if (!Array.isArray(savedBoards)) {
+                savedBoards = [];
+            }
+            savedBoards.push(boardProperties);
+            localStorage.setItem('savedBoards', JSON.stringify(savedBoards));
+        }
+    });
+    size.addEventListener('change', () => board.updateMapSize(size.value));
+}
