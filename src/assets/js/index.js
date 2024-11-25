@@ -7,10 +7,11 @@ if (previousFilesContainer) {
             if (index >= 10) return;
             const boardEntry = document.createElement('p');
             boardEntry.className = 'board-history';
-            boardEntry.innerHTML = `${index + 1}. ${board.title} - ${board.cards.length} cards<br>Updated at: ${board.date}`;
+            boardEntry.innerHTML = `<a href="board.html?id=${index}">${index + 1}. ${board.title}</a> - ${board.cards.length} cards<br>Updated at: ${board.date}`;
             previousFilesContainer.appendChild(boardEntry);
         });
     } else {
         previousFilesContainer.innerHTML = 'No boards created yet - start now!';
     }
 }
+// localStorage.   removeItem('savedBoards');

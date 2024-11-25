@@ -48,10 +48,12 @@ class Board {
         /* end current position */
 
         /* add card if no cards */
-        if (this.cards.length === 0) {
-            this.addCard();
+        let loaded = location.search.split('id=')[1];
+        if (loaded !== undefined) {
+            this.loadFromFile(loaded);
+            document.querySelector('#map-title').value = JSON.parse(localStorage.getItem('savedBoards'))[loaded].title;
         } else {
-            this.cards = this.content.querySelectorAll('.card');
+            this.addCard();
         }
 
         this.addSvgLines();
@@ -403,24 +405,26 @@ class Board {
     }
 
 
-    addCard() {
+    addCard(cardLoaded = null) {
         let card = document.createElement("div");
-        const highestId = this.cards.reduce((max, card) => {
+        const highestId =  this.cards.reduce((max, card) => {
             const match = card.id;
             const id = card.id ? parseInt(match[1], 10) : 0; // Extract and parse or default to 0
             return Math.max(max, id);
         }, 0);
-        card.id = "card_" + (highestId + 1);
+        card.id = cardLoaded?.id ? "card_" + cardLoaded?.id : "card_" + (highestId + 1);
         card.classList.add('card');
         card.classList.add('sekcja');
+        const title = cardLoaded?.title ?? '';
+        const content = cardLoaded?.content ?? '';
         card.innerHTML = `
             <div class="sekcja-head">
                 <p class="link"><i class="icon-switch"></i></p>
-                <textarea class="card-textarea-title" rows="2" type="text" placeholder="Title..."></textarea>
+                <textarea class="card-textarea-title" rows="2" type="text" placeholder="Title...">${title}</textarea>
                 <p class="delete"><i class="icon-cancel"></i></p>
             </div>
             <div class="sekcja-body">
-                <textarea type="text" class="card-content" placeholder="Content..."></textarea>
+                <textarea type="text" class="card-content" placeholder="Content...">${content}</textarea>
             </div>
         `;
         card.style.width = 'fit-content';
@@ -434,7 +438,7 @@ class Board {
         this.content.appendChild(card);
         const cardRect = card.getBoundingClientRect();
 
-        card.querySelector('.sekcja-head').style.background = this.defaultCardColor;
+        card.querySelector('.sekcja-head').style.background = card.background_color ?? this.defaultCardColor;
 
         // Calculate the center position
         const boardRect = this.board.getBoundingClientRect(); // Board dimensions
@@ -449,24 +453,24 @@ class Board {
             (boardRect.height / 2 + boardRect.top - contentRect.top) / this.zoomLevel -
             cardRect.height / 2;
 
-        card.style.left = `${centerX}px`;
-        card.style.top = `${centerY}px`;
+        card.style.left = cardLoaded?.left ? cardLoaded?.left + 'px' : `${centerX}px`;
+        card.style.top = cardLoaded?.top ? cardLoaded?.top + 'px' : `${centerY}px`;
 
         const cardOptions = {
             'id': highestId + 1,
             'styles': {
                 'top': centerY,
                 'left': centerX,
-                'background-color': this.defaultCardColor
+                'background_color': cardLoaded?.background_color ?? this.defaultCardColor
             },
             'content': {
-                'title': '',
-                'text': ''
+                'title': cardLoaded?.content?.title ?? '',
+                'text': cardLoaded?.content?.text ?? ''
             },
             'misc' : card
         }
 
-        this.cards.push(cardOptions);
+        if (!cardLoaded?.id) this.cards.push(cardOptions);
         this.updateNavCardSelector();
     }
 
@@ -520,6 +524,7 @@ class Board {
         this.isUpdatingLines = true;
 
         requestAnimationFrame(() => {
+            console.log(this.relations);
             this.relations.forEach(relation => relation.updateLinePosition());
             this.isUpdatingLines = false;
         });
@@ -551,7 +556,7 @@ class Board {
         const selector = document.querySelector('#card-selector');
         selector.innerHTML = '<option value="">-</option>'; // delete all options in selector
         this.cards.forEach(card => {
-            let title = card.misc.querySelector('.card-textarea-title').value;
+            let title = card.content.title;
             selector.innerHTML += `
                 <option value="${card.id}">${title}</option>
             `;
@@ -566,6 +571,7 @@ class Board {
     getBoardProperties(title) {
         const boardState = {
             zoomLevel: this.zoomLevel,
+            currentZoomIndex: this.currentZoomIndex,
             position: this.position,
             maxPosition: this.maxPosition,
             size: this.size,
@@ -581,6 +587,29 @@ class Board {
     updateMapSize(size) {
         this.size = size;
         this.maxPosition = this.maxResolution(size);
+    }
+
+    loadFromFile(id) {
+        const allBoards = JSON.parse(localStorage.getItem('savedBoards'));
+        this.setProperties(allBoards[id]);
+        console.log(this.getBoardProperties('test'));
+        this.updateAllLines();
+        this.maxResolution(this.size);
+        this.updateMapSize(this.size);
+        this.cards.forEach((card) => {
+            this.addCard(card);
+        })
+    }
+
+    setProperties(data) {
+        this.currentZoomIndex = data.currentZoomIndex,
+        this.zoomLevel = data.zoomLevel;
+        this.position = data.position;
+        this.maxPosition = data.maxPosition;
+        this.size = data.size;
+        this.cards = data.cards;
+        this.relations = data.relations;
+        this.title = data.title;
     }
 
 }
@@ -621,8 +650,7 @@ if (document.querySelector('#board')) {
                 title: title,
                 data: boardProperties,
             };
-
-            window.electronAPI  .saveContentToFile(result.filePath, content);
+            window.electronAPI.saveContentToFile(result.filePath, JSON.stringify(content));
             // Get the saved boards from localStorage or initialize as an empty array if not found
             let savedBoards = JSON.parse(localStorage.getItem('savedBoards') || '[]');
             if (!Array.isArray(savedBoards)) {
