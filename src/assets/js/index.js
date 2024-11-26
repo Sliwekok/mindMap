@@ -14,4 +14,4 @@ if (previousFilesContainer) {
         previousFilesContainer.innerHTML = 'No boards created yet - start now!';
     }
 }
-// localStorage.   removeItem('savedBoards');
+// localStorage.removeItem('savedBoards');

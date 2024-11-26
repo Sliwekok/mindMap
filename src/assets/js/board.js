@@ -409,14 +409,15 @@ class Board {
         let card = document.createElement("div");
         const highestId =  this.cards.reduce((max, card) => {
             const match = card.id;
-            const id = card.id ? parseInt(match[1], 10) : 0; // Extract and parse or default to 0
+            const id = parseInt(match[1], 10) ?? 0; // Extract and parse or default to 0
             return Math.max(max, id);
         }, 0);
-        card.id = cardLoaded?.id ? "card_" + cardLoaded?.id : "card_" + (highestId + 1);
+
+        card.id = cardLoaded?.id ? "card_" + cardLoaded.id : "card_" + (highestId + 1);
         card.classList.add('card');
         card.classList.add('sekcja');
-        const title = cardLoaded?.title ?? '';
-        const content = cardLoaded?.content ?? '';
+        const title = cardLoaded?.content.title ?? '';
+        const content = cardLoaded?.content.text ?? '';
         card.innerHTML = `
             <div class="sekcja-head">
                 <p class="link"><i class="icon-switch"></i></p>
@@ -487,33 +488,35 @@ class Board {
         this.updateNavCardSelector();
     }
 
+    updateLinePosition (card1, card2, line) {
+        // if (card1)
+        console.log(card1, typeof card1, line, typeof line, this.cards);
+        const rect1 = card1.getBoundingClientRect();
+        const rect2 = card2.getBoundingClientRect();
+
+        const x1 = (rect1.left + rect1.width / 2) - this.board.getBoundingClientRect().left;
+        const y1 = (rect1.top + rect1.height / 2) - this.board.getBoundingClientRect().top;
+
+        const x2 = (rect2.left + rect2.width / 2) - this.board.getBoundingClientRect().left;
+        const y2 = (rect2.top + rect2.height / 2) - this.board.getBoundingClientRect().top;
+
+        line.setAttribute("x1", x1 / this.zoomLevel);
+        line.setAttribute("y1", y1 / this.zoomLevel);
+        line.setAttribute("x2", x2 / this.zoomLevel);
+        line.setAttribute("y2", y2 / this.zoomLevel);
+    };
+
     createLine(card1, card2) {
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
         line.setAttribute("stroke", "red");
         line.setAttribute("stroke-width", "4");
         this.svgContainer.appendChild(line);
 
-        const updateLinePosition = () => {
-            const rect1 = card1.getBoundingClientRect();
-            const rect2 = card2.getBoundingClientRect();
-
-            const x1 = (rect1.left + rect1.width / 2) - this.board.getBoundingClientRect().left;
-            const y1 = (rect1.top + rect1.height / 2) - this.board.getBoundingClientRect().top;
-
-            const x2 = (rect2.left + rect2.width / 2) - this.board.getBoundingClientRect().left;
-            const y2 = (rect2.top + rect2.height / 2) - this.board.getBoundingClientRect().top;
-
-            line.setAttribute("x1", x1 / this.zoomLevel);
-            line.setAttribute("y1", y1 / this.zoomLevel);
-            line.setAttribute("x2", x2 / this.zoomLevel);
-            line.setAttribute("y2", y2 / this.zoomLevel);
-        };
-
         // Initial position
-        updateLinePosition();
+        this.updateLinePosition(card1, card2, line);
 
         // Add the line and related cards to the relations registry
-        this.relations.push({ line, card1, card2, updateLinePosition });
+        this.relations.push({ line, card1, card2 });
 
         // Return the line for further handling if needed
         return line;
@@ -524,8 +527,7 @@ class Board {
         this.isUpdatingLines = true;
 
         requestAnimationFrame(() => {
-            console.log(this.relations);
-            this.relations.forEach(relation => relation.updateLinePosition());
+            this.relations.forEach(relation => this.updateLinePosition(relation.card1, relation.card2, relation.line));
             this.isUpdatingLines = false;
         });
     }
@@ -569,6 +571,19 @@ class Board {
     }
 
     getBoardProperties(title) {
+        let relationsSaved = [];
+        this.relations.forEach((relation, index) => {
+            relationsSaved.push({
+                'card1': relation.card1,
+                'card2': relation.card2,
+                'line': {
+                    'x1': relation.line.x1,
+                    'x2': relation.line.x2,
+                    'y1': relation.line.y1,
+                    'y2': relation.line.y2,
+                }
+            })
+        });
         const boardState = {
             zoomLevel: this.zoomLevel,
             currentZoomIndex: this.currentZoomIndex,
@@ -576,7 +591,7 @@ class Board {
             maxPosition: this.maxPosition,
             size: this.size,
             cards: this.cards,
-            relations: this.relations,
+            relations: relationsSaved,
             title: title,
             date: new Date().toISOString().replace('T', ' ').slice(0, 19), // date in Y-m-d H:i:s format
         };
@@ -592,7 +607,6 @@ class Board {
     loadFromFile(id) {
         const allBoards = JSON.parse(localStorage.getItem('savedBoards'));
         this.setProperties(allBoards[id]);
-        console.log(this.getBoardProperties('test'));
         this.updateAllLines();
         this.maxResolution(this.size);
         this.updateMapSize(this.size);
