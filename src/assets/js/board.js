@@ -47,6 +47,8 @@ class Board {
         this.position.y = (rect.top + rect.height / 2) / this.zoomLevel;
         /* end current position */
 
+        this.addSvgLines();
+
         /* add card if no cards */
         let loaded = location.search.split('id=')[1];
         if (loaded !== undefined) {
@@ -55,8 +57,6 @@ class Board {
         } else {
             this.addCard();
         }
-
-        this.addSvgLines();
     }
 
     addSvgLines() {
@@ -407,13 +407,16 @@ class Board {
 
     addCard(cardLoaded = null) {
         let card = document.createElement("div");
-        const highestId =  this.cards.reduce((max, card) => {
-            const match = card.id;
-            const id = parseInt(match[1], 10) ?? 0; // Extract and parse or default to 0
-            return Math.max(max, id);
-        }, 0);
-
-        card.id = cardLoaded?.id ? "card_" + cardLoaded.id : "card_" + (highestId + 1);
+        if (cardLoaded === null || cardLoaded === undefined) {
+            const highestId =  this.cards.reduce((max, card) => {
+                const match = card.id;
+                const id = parseInt(match[1], 10) ?? 0; // Extract and parse or default to 0
+                return Math.max(max, id);
+            }, 0);
+            card.id = "card_" + (highestId + 1);
+        } else {
+            card.id = "card_" + cardLoaded.id;
+        }
         card.classList.add('card');
         card.classList.add('sekcja');
         const title = cardLoaded?.content.title ?? '';
@@ -458,7 +461,7 @@ class Board {
         card.style.top = cardLoaded?.top ? cardLoaded?.top + 'px' : `${centerY}px`;
 
         const cardOptions = {
-            'id': highestId + 1,
+            'id': card.id,
             'styles': {
                 'top': centerY,
                 'left': centerX,
@@ -489,8 +492,7 @@ class Board {
     }
 
     updateLinePosition (card1, card2, line) {
-        // if (card1)
-        console.log(card1, typeof card1, line, typeof line, this.cards);
+        console.log(card1, card2);
         const rect1 = card1.getBoundingClientRect();
         const rect2 = card2.getBoundingClientRect();
 
@@ -516,7 +518,7 @@ class Board {
         this.updateLinePosition(card1, card2, line);
 
         // Add the line and related cards to the relations registry
-        this.relations.push({ line, card1, card2 });
+        this.relations.push({ line, card1, card2, 'card_1_id':  });
 
         // Return the line for further handling if needed
         return line;
@@ -525,9 +527,13 @@ class Board {
     updateAllLines() {
         if (this.isUpdatingLines) return; // Prevent multiple calls
         this.isUpdatingLines = true;
-
         requestAnimationFrame(() => {
-            this.relations.forEach(relation => this.updateLinePosition(relation.card1, relation.card2, relation.line));
+            this.relations.forEach(relation => { 
+                console.log(relation);
+                this.updateLinePosition(relation.card1, relation.card2, relation.line);
+        });
+            // this.relations.forEach(relation => {
+            // });
             this.isUpdatingLines = false;
         });
     }
@@ -571,19 +577,6 @@ class Board {
     }
 
     getBoardProperties(title) {
-        let relationsSaved = [];
-        this.relations.forEach((relation, index) => {
-            relationsSaved.push({
-                'card1': relation.card1,
-                'card2': relation.card2,
-                'line': {
-                    'x1': relation.line.x1,
-                    'x2': relation.line.x2,
-                    'y1': relation.line.y1,
-                    'y2': relation.line.y2,
-                }
-            })
-        });
         const boardState = {
             zoomLevel: this.zoomLevel,
             currentZoomIndex: this.currentZoomIndex,
@@ -591,7 +584,7 @@ class Board {
             maxPosition: this.maxPosition,
             size: this.size,
             cards: this.cards,
-            relations: relationsSaved,
+            relations: this.relations,
             title: title,
             date: new Date().toISOString().replace('T', ' ').slice(0, 19), // date in Y-m-d H:i:s format
         };
@@ -607,12 +600,12 @@ class Board {
     loadFromFile(id) {
         const allBoards = JSON.parse(localStorage.getItem('savedBoards'));
         this.setProperties(allBoards[id]);
-        this.updateAllLines();
         this.maxResolution(this.size);
         this.updateMapSize(this.size);
         this.cards.forEach((card) => {
             this.addCard(card);
         })
+        this.updateAllLines();
     }
 
     setProperties(data) {
