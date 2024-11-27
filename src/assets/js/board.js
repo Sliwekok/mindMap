@@ -611,7 +611,6 @@ class Board {
         tempRelations.forEach((relation) => {
             this.createLine(this.board.querySelector('#' + relation.card1_id), this.board.querySelector('#' + relation.card2_id),)
         });
-        console.log(this.relations, this.cards, this.zoomLevel, this.currentZoomIndex);
     }
 
     setProperties(data) {
@@ -669,7 +668,12 @@ if (document.querySelector('#board')) {
             if (!Array.isArray(savedBoards)) {
                 savedBoards = [];
             }
-            savedBoards.push(boardProperties);
+            const loaded = location.search.split('id=')[1];
+            if (loaded) {
+                savedBoards[loaded] = boardProperties;
+            } else {
+                savedBoards.push(boardProperties);
+            }
             localStorage.setItem('savedBoards', JSON.stringify(savedBoards));
         }
 
