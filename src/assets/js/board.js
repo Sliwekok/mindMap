@@ -114,9 +114,6 @@ class Board {
                 this.isControlPressed = false;
                 this.endPan(); // End panning on Ctrl release
             }
-
-            this.updateNavCardSelector();
-
         });
         // Handle zooming
         this.board.addEventListener('wheel', this.handleZoom.bind(this));
@@ -176,16 +173,22 @@ class Board {
         });
 
         // save typed new values in cards
-        this.board.querySelectorAll('.card textarea').forEach((textarea) => {
-            textarea.addEventListener('input', (event) => {
-                const cardChanged = textarea.parentNode.parentNode;
-                const cardChangedId = cardChanged.id.replace('card_', '');
+        this.board.addEventListener('input', (event) => {
+            const textarea = event.target;
+
+            // Check if the input event is triggered by a textarea within a card
+            if (textarea.matches('.card textarea')) {
+                const cardChanged = textarea.closest('.card'); // Find the closest card container
+                let card = this.cards.find(card => card.id === cardChanged.id);
+
                 if (textarea.classList.contains('card-textarea-title')) {
-                    this.cards.find(card => card.id.toString() === cardChangedId).content.title = textarea.value;
+                    card.content.title = textarea.value;
                 } else {
-                    this.cards.find(card => card.id.toString() === cardChangedId).content.text = textarea.value;
+                    card.content.text = textarea.value;
                 }
-            });
+
+                this.updateNavCardSelector();
+            }
         });
     }
 
@@ -284,8 +287,8 @@ class Board {
         return  this.movementSensitivity / this.zoomLevel;
     }
 
-    handleZoom(event) {
-        if (event.ctrlKey) {
+    handleZoom(event, isForced = false) {
+        if (event.ctrlKey || isForced) {
             let zoomChange = 0;
 
             // Determine zoom direction based on scroll direction
@@ -352,7 +355,6 @@ class Board {
         }
     }
 
-
     startPan(event) {
         if (event.ctrlKey) {
             this.isPanning = true;
@@ -409,13 +411,13 @@ class Board {
         let card = document.createElement("div");
         if (cardLoaded === null || cardLoaded === undefined) {
             const highestId =  this.cards.reduce((max, card) => {
-                const match = card.id;
+                const match = card.id.split('_');
                 const id = parseInt(match[1], 10) ?? 0; // Extract and parse or default to 0
                 return Math.max(max, id);
             }, 0);
             card.id = "card_" + (highestId + 1);
         } else {
-            card.id = "card_" + cardLoaded.id;
+            card.id = cardLoaded.id;
         }
         card.classList.add('card');
         card.classList.add('sekcja');
@@ -457,14 +459,15 @@ class Board {
             (boardRect.height / 2 + boardRect.top - contentRect.top) / this.zoomLevel -
             cardRect.height / 2;
 
-        card.style.left = cardLoaded?.left ? cardLoaded?.left + 'px' : `${centerX}px`;
-        card.style.top = cardLoaded?.top ? cardLoaded?.top + 'px' : `${centerY}px`;
+
+        card.style.left = cardLoaded?.styles.left ? cardLoaded?.styles.left + 'px' : `${centerX}px`;
+        card.style.top = cardLoaded?.styles.top ? cardLoaded?.styles.top + 'px' : `${centerY}px`;
 
         const cardOptions = {
             'id': card.id,
             'styles': {
-                'top': centerY,
-                'left': centerX,
+                'top': cardLoaded?.top ?? centerY,
+                'left': cardLoaded?.left ?? centerX,
                 'background_color': cardLoaded?.background_color ?? this.defaultCardColor
             },
             'content': {
@@ -492,7 +495,6 @@ class Board {
     }
 
     updateLinePosition (card1, card2, line) {
-        console.log(card1, card2);
         const rect1 = card1.getBoundingClientRect();
         const rect2 = card2.getBoundingClientRect();
 
@@ -513,12 +515,11 @@ class Board {
         line.setAttribute("stroke", "red");
         line.setAttribute("stroke-width", "4");
         this.svgContainer.appendChild(line);
-
         // Initial position
         this.updateLinePosition(card1, card2, line);
 
         // Add the line and related cards to the relations registry
-        this.relations.push({ line, card1, card2, 'card_1_id':  });
+        this.relations.push({ line, card1, card2, 'card1_id': card1.id, 'card2_id': card2.id });
 
         // Return the line for further handling if needed
         return line;
@@ -529,7 +530,6 @@ class Board {
         this.isUpdatingLines = true;
         requestAnimationFrame(() => {
             this.relations.forEach(relation => { 
-                console.log(relation);
                 this.updateLinePosition(relation.card1, relation.card2, relation.line);
         });
             // this.relations.forEach(relation => {
@@ -572,7 +572,7 @@ class Board {
     }
 
     updateCardBackgroundColor(card, color) {
-        card = this.content.querySelector('#card_' + card);
+        card = this.content.querySelector('#' + card);
         card.querySelector('.sekcja-head').style.background = color;
     }
 
@@ -602,10 +602,16 @@ class Board {
         this.setProperties(allBoards[id]);
         this.maxResolution(this.size);
         this.updateMapSize(this.size);
+        this.handleZoom(new Event('keydown', {ctrlKey: true}), true)
         this.cards.forEach((card) => {
             this.addCard(card);
         })
-        this.updateAllLines();
+        let tempRelations = this.relations;
+        this.relations = [];
+        tempRelations.forEach((relation) => {
+            this.createLine(this.board.querySelector('#' + relation.card1_id), this.board.querySelector('#' + relation.card2_id),)
+        });
+        console.log(this.relations, this.cards, this.zoomLevel, this.currentZoomIndex);
     }
 
     setProperties(data) {
@@ -666,6 +672,7 @@ if (document.querySelector('#board')) {
             savedBoards.push(boardProperties);
             localStorage.setItem('savedBoards', JSON.stringify(savedBoards));
         }
+
     });
     size.addEventListener('change', () => board.updateMapSize(size.value));
 }
