@@ -444,7 +444,7 @@ class Board {
         this.content.appendChild(card);
         const cardRect = card.getBoundingClientRect();
 
-        card.querySelector('.sekcja-head').style.background = card.background_color ?? this.defaultCardColor;
+        card.querySelector('.sekcja-head').style.background = cardLoaded?.styles.background_color ?? this.defaultCardColor;
 
         // Calculate the center position
         const boardRect = this.board.getBoundingClientRect(); // Board dimensions
@@ -572,8 +572,11 @@ class Board {
     }
 
     updateCardBackgroundColor(card, color) {
-        card = this.content.querySelector('#' + card);
-        card.querySelector('.sekcja-head').style.background = color;
+        let cardSelected = this.content.querySelector('#' + card);
+        cardSelected.querySelector('.sekcja-head').style.background = color;
+
+        let cardArray = this.cards.find(currCard => currCard.id == card);
+        cardArray.styles.background_color = color;
     }
 
     getBoardProperties(title) {
