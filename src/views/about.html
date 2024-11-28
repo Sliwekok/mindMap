@@ -3,18 +3,49 @@
 
 <head>
     <meta charset="UTF-8" />
-    <title>about</title>
-     <script src="../assets/js/main.js"></script>
-     <link href="../assets/css/index.css"  rel="stylesheet">
+    <title>Mind map</title>
+    <script src="../assets/js/main.js"></script>
+    <link href="../assets/css/main.css" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="../resources/icon.png">
+
 </head>
 
 <body>
-    <h1>About</h1>
-    <p>About app</p>
-    <a href="index.html">home</a>
-    <script>
-        
-    </script>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12 d-inline-flex mt-5 flex-wrap">
+                <div class="col-6">
+                    <div class="col-10 offset-1">
+                        <p class="title col-12 text-center">About app</p>
+                            <ul class="">
+                                <li class="mt-4">This app allows you to create mind map with data and connect it.</li>
+                                <li class="mt-4">You can choose 4 size of map - based on selected value the map will grow or shrink</li>
+                                <li class="mt-4">To zoom in or out you hold <span class="border p-2 rounded border border-info">CTRL key</span> and scroll<span class="border p-2 rounded border border-info">mouse wheel</span></li>
+                                <li class="mt-4">To scroll and change camera position you hold<span class="border p-2 rounded border border-info">CTRL key</span> and hold<span class="border p-2 rounded border border-info">left click</span> on empty map space and move it to some direction</li>
+                                <li class="mt-4">You can add relation by clicking on switch button (upper-left corner of card) and navigating to meant-to card.</li>
+                                <li class="mt-4">Remember about adding name to your mind up (upper-left in nav) and click save whenever you're ready to go!</li>
+                            </ul>
+                        <p></p>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="col-10 offset-1">
+                        <p class="title col-12 text-center">Data</p>
+                        <p>App uses local storage to save files and to load them dynamically. You can delete all your data <button class="btn btn-outline-danger" id="data-user-clear-all" onclick="if (confirm('Are you sure you want to delete all saved data? <br>This operation is irreparable')) localStorage.clear(); alert('Data cleared!');">here</button> but keep in mind already stored files will stay on your machine.</p>
+                        <p>Software license:</p>
+                        <p>"THE BEER-WARE LICENSE" (Revision 42):
+                        <i>dominiksliwek@gmail.com</i> wrote this application. As long as you retain this notice you
+                            can do whatever you want with this stuff. If we meet some day, and you think
+                            this stuff is worth it, you can buy me a beer in return. Dominik Śliwiński</p>
+                    </div>
+                </div>
+                <div class="col-12 text-center mt-5 pt-2">
+                    Ready to go? <br>
+                    <a href="index.html" class="btn btn-outline-primary mt-2">Go to index</a>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>
