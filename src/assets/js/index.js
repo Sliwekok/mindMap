@@ -13,5 +13,15 @@ if (previousFilesContainer) {
     } else {
         previousFilesContainer.innerHTML = 'No boards created yet - start now!';
     }
+
+    const openButton = document.querySelector('#openFromFile');
+    openButton.addEventListener('click',  async () => {
+        let file = await window.electronAPI.openFile();
+        const {filePath} = file;
+        let path = "board.html?id="+filePath;
+        window.location.replace(path);
+    });
+
+
 }
 // localStorage.removeItem('savedBoards');

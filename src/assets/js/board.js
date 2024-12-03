@@ -14,7 +14,7 @@ class Board {
         this.isPanning = false; // Flag to check if panning is active
         this.position = {x: 0, y: 0};
         this.maxPosition = this.maxResolution(size); // max content width and height
-        this.movementSensitivity = 3;
+        this.movementSensitivity = 1;
         this.speedModifier = this.calcMovementSpeed();
         this.cards = [];
         this.maxCardWidth = 500;
@@ -52,11 +52,34 @@ class Board {
         /* add card if no cards */
         let loaded = location.search.split('id=')[1];
         if (loaded !== undefined) {
-            this.loadFromFile(loaded);
-            document.querySelector('#map-title').value = JSON.parse(localStorage.getItem('savedBoards'))[loaded].title;
+            let number = Number(loaded);
+            if (Number.isInteger(number)) {
+                this.loadFromSession(loaded);
+            } else {
+                fetch(loaded)
+                    .then(response => response.text())
+                    .then(text => this.loadFromFile(JSON.parse(text)));
+            }
         } else {
             this.addCard();
         }
+    }
+
+    loadFromFile(data) {
+        this.setProperties(data.data);
+        this.maxResolution(this.size);
+        this.updateMapSize(this.size);
+        this.handleZoom(new Event('keydown', {ctrlKey: true}), true)
+        this.cards.forEach((card) => {
+            this.addCard(card);
+        })
+        let tempRelations = this.relations;
+        this.relations = [];
+        tempRelations.forEach((relation) => {
+            this.createLine(this.board.querySelector('#' + relation.card1_id), this.board.querySelector('#' + relation.card2_id),)
+        });
+        document.querySelector('#map-title').value = data.data.title;
+
     }
 
     addSvgLines() {
@@ -274,6 +297,10 @@ class Board {
             this.currentCard.style.left = `${newLeft}px`;
             this.currentCard.style.top = `${newTop}px`;
 
+            let changedCard = this.cards.find(card => card.id === this.currentCard.id);
+            changedCard.styles.left = `${newLeft}px`;
+            changedCard.styles.top = `${newTop}px`;
+
             this.updateAllLines();
         }
     }
@@ -459,16 +486,15 @@ class Board {
             (boardRect.height / 2 + boardRect.top - contentRect.top) / this.zoomLevel -
             cardRect.height / 2;
 
-
-        card.style.left = cardLoaded?.styles.left ? cardLoaded?.styles.left + 'px' : `${centerX}px`;
-        card.style.top = cardLoaded?.styles.top ? cardLoaded?.styles.top + 'px' : `${centerY}px`;
+        card.style.left = cardLoaded?.styles.left ? cardLoaded.styles.left : `${centerX}px`;
+        card.style.top = cardLoaded?.styles.top ? cardLoaded.styles.top : `${centerY}px`;
 
         const cardOptions = {
             'id': card.id,
             'styles': {
-                'top': cardLoaded?.top ?? centerY,
-                'left': cardLoaded?.left ?? centerX,
-                'background_color': cardLoaded?.background_color ?? this.defaultCardColor
+                'top': cardLoaded?.styles.top ?? centerY,
+                'left': cardLoaded?.styles.left ?? centerX,
+                'background_color': cardLoaded?.styles.background_color ?? this.defaultCardColor
             },
             'content': {
                 'title': cardLoaded?.content?.title ?? '',
@@ -495,8 +521,17 @@ class Board {
     }
 
     updateLinePosition (card1, card2, line) {
-        const rect1 = card1.getBoundingClientRect();
-        const rect2 = card2.getBoundingClientRect();
+        let rect1, rect2;
+        if (typeof card1 == 'string') {
+            rect1 = this.board.querySelector('#' + card1).getBoundingClientRect();
+        } else {
+            rect1 = card1.getBoundingClientRect();
+        }
+        if (typeof card2 == 'string') {
+            rect2 = this.board.querySelector('#' + card2).getBoundingClientRect();
+        } else {
+            rect2 = card2.getBoundingClientRect();
+        }
 
         const x1 = (rect1.left + rect1.width / 2) - this.board.getBoundingClientRect().left;
         const y1 = (rect1.top + rect1.height / 2) - this.board.getBoundingClientRect().top;
@@ -508,7 +543,7 @@ class Board {
         line.setAttribute("y1", y1 / this.zoomLevel);
         line.setAttribute("x2", x2 / this.zoomLevel);
         line.setAttribute("y2", y2 / this.zoomLevel);
-    };
+    }
 
     createLine(card1, card2) {
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
@@ -529,8 +564,8 @@ class Board {
         if (this.isUpdatingLines) return; // Prevent multiple calls
         this.isUpdatingLines = true;
         requestAnimationFrame(() => {
-            this.relations.forEach(relation => { 
-                this.updateLinePosition(relation.card1, relation.card2, relation.line);
+            this.relations.forEach(relation => {
+                this.updateLinePosition(relation.card1_id, relation.card2_id, relation.line);
         });
             // this.relations.forEach(relation => {
             // });
@@ -600,7 +635,7 @@ class Board {
         this.maxPosition = this.maxResolution(size);
     }
 
-    loadFromFile(id) {
+    loadFromSession(id) {
         const allBoards = JSON.parse(localStorage.getItem('savedBoards'));
         this.setProperties(allBoards[id]);
         this.maxResolution(this.size);
@@ -614,6 +649,7 @@ class Board {
         tempRelations.forEach((relation) => {
             this.createLine(this.board.querySelector('#' + relation.card1_id), this.board.querySelector('#' + relation.card2_id),)
         });
+        document.querySelector('#map-title').value = JSON.parse(localStorage.getItem('savedBoards'))[loaded].title;
     }
 
     setProperties(data) {
@@ -665,7 +701,7 @@ if (document.querySelector('#board')) {
                 title: title,
                 data: boardProperties,
             };
-            window.electronAPI.saveContentToFile(result.filePath, JSON.stringify(content));
+            window.electronAPI.saveContentToFile(result.filePath, content);
             // Get the saved boards from localStorage or initialize as an empty array if not found
             let savedBoards = JSON.parse(localStorage.getItem('savedBoards') || '[]');
             if (!Array.isArray(savedBoards)) {

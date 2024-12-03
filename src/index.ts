@@ -36,6 +36,23 @@ app.on('activate', () => {
 ipcMain.handle('dialog:save', async (_: any, options: any) => {
     return dialog.showSaveDialog(options);
 });
+ipcMain.handle('dialog:openFile', async () => {
+    const result = await dialog.showOpenDialog({
+        properties: ['openFile'],
+        filters: [
+            { name: 'JSON files', extensions: ['json'] },
+            { name: 'All Files', extensions: ['*'] }
+        ]
+    });
+
+    if (result.canceled) {
+        return { canceled: true };
+    }
+
+    const filePath = result.filePaths[0];
+    const fileContent = fs.readFileSync(filePath, 'utf-8');
+    return { filePath, fileContent };
+});
 
 ipcMain.on('save-content-to-file', (event: any, filePath: any, content: any) => {
     // Convert content to a JSON string
