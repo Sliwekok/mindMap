@@ -3,7 +3,8 @@
   "productName": "mind-map",
   "version": "1.0.0",
   "description": "Mind map that helps you standarize your knowledge",
-  "main": ".webpack/main/main.js",
+  "main-dev": ".webpack/main/main.js",
+  "main": "src/assets/js/main.js",
   "scripts": {
     "start": "electron-forge start",
     "package": "electron-forge package",
@@ -28,6 +29,7 @@
     "@vercel/webpack-asset-relocator-loader": "1.7.3",
     "css-loader": "^6.0.0",
     "electron": "33.2.0",
+    "electron-packager": "^17.1.2",
     "eslint": "^8.0.1",
     "eslint-plugin-import": "^2.25.0",
     "fork-ts-checker-webpack-plugin": "^7.2.13",
@@ -49,7 +51,7 @@
   },
   "build": {
     "win": {
-      "icon": "./resources/icon.ico"
+      "icon": "src/resources/icon.ico"
     }
   }
 }
