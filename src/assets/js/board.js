@@ -649,7 +649,7 @@ class Board {
         tempRelations.forEach((relation) => {
             this.createLine(this.board.querySelector('#' + relation.card1_id), this.board.querySelector('#' + relation.card2_id),)
         });
-        document.querySelector('#map-title').value = JSON.parse(localStorage.getItem('savedBoards'))[loaded].title;
+        document.querySelector('#map-title').value = JSON.parse(localStorage.getItem('savedBoards'))[id].title;
     }
 
     setProperties(data) {
