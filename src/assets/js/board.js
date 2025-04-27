@@ -14,7 +14,7 @@ class Board {
         this.isPanning = false; // Flag to check if panning is active
         this.position = {x: 0, y: 0};
         this.maxPosition = this.maxResolution(size); // max content width and height
-        this.movementSensitivity = 1;
+        this.movementSensitivity = 2.5;
         this.speedModifier = this.calcMovementSpeed();
         this.cards = [];
         this.maxCardWidth = 500;
@@ -338,11 +338,11 @@ class Board {
 
             // Check if zooming out would violate the minimum resolution
             if (zoomChange === -1) { // Zooming out
-                const minResolution = this.maxPosition;
-                const proposedWidth = this.board.offsetWidth / newZoomLevel;
-                const proposedHeight = this.board.offsetHeight / newZoomLevel;
+                const proposedWidth = this.content.offsetWidth * newZoomLevel;
+                const proposedHeight = this.content.offsetHeight * newZoomLevel;
+
                 // Prevent zooming out if it violates the minimum resolution
-                if (proposedWidth > minResolution.x || proposedHeight > minResolution.y) {
+                if (proposedWidth <= this.board.offsetWidth || proposedHeight <= this.board.offsetHeight) {
                     return;
                 }
             }
@@ -520,29 +520,35 @@ class Board {
         this.updateNavCardSelector();
     }
 
-    updateLinePosition (card1, card2, line) {
+    updateLinePosition(card1, card2, line) {
         let rect1, rect2;
-        if (typeof card1 == 'string') {
+        if (typeof card1 === 'string') {
             rect1 = this.board.querySelector('#' + card1).getBoundingClientRect();
         } else {
             rect1 = card1.getBoundingClientRect();
         }
-        if (typeof card2 == 'string') {
+        if (typeof card2 === 'string') {
             rect2 = this.board.querySelector('#' + card2).getBoundingClientRect();
         } else {
             rect2 = card2.getBoundingClientRect();
         }
 
-        const x1 = (rect1.left + rect1.width / 2) - this.board.getBoundingClientRect().left;
-        const y1 = (rect1.top + rect1.height / 2) - this.board.getBoundingClientRect().top;
+        const boardRect = this.board.getBoundingClientRect();
+        const contentRect = this.content.getBoundingClientRect();
 
-        const x2 = (rect2.left + rect2.width / 2) - this.board.getBoundingClientRect().left;
-        const y2 = (rect2.top + rect2.height / 2) - this.board.getBoundingClientRect().top;
+        const offsetX = contentRect.left - boardRect.left;
+        const offsetY = contentRect.top - boardRect.top;
 
-        line.setAttribute("x1", x1 / this.zoomLevel);
-        line.setAttribute("y1", y1 / this.zoomLevel);
-        line.setAttribute("x2", x2 / this.zoomLevel);
-        line.setAttribute("y2", y2 / this.zoomLevel);
+        const x1 = (rect1.left + rect1.width / 2 - boardRect.left - offsetX) / this.zoomLevel;
+        const y1 = (rect1.top + rect1.height / 2 - boardRect.top - offsetY) / this.zoomLevel;
+
+        const x2 = (rect2.left + rect2.width / 2 - boardRect.left - offsetX) / this.zoomLevel;
+        const y2 = (rect2.top + rect2.height / 2 - boardRect.top - offsetY) / this.zoomLevel;
+
+        line.setAttribute("x1", x1);
+        line.setAttribute("y1", y1);
+        line.setAttribute("x2", x2);
+        line.setAttribute("y2", y2);
     }
 
     createLine(card1, card2) {

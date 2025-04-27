@@ -16,7 +16,7 @@ function createWindow () {
   mainWindow.loadFile('src/views/index.html')
   mainWindow.maximize();
 
-  // mainWindow.webContents.openDevTools()
+  mainWindow.webContents.openDevTools()
 }
 
 app.on('ready', createWindow);
