@@ -267,22 +267,26 @@ class Board {
             this.isDragging = true;
             this.currentCard = card;
 
-            // Get the bounding rectangles
-            const cardRect = card.getBoundingClientRect();
             const boardRect = this.board.getBoundingClientRect();
+            const cardRect = card.getBoundingClientRect();
 
-            // Calculate the card's position relative to the board
-            const cardLeft = (cardRect.left - boardRect.left) / this.zoomLevel;
-            const cardTop = (cardRect.top - boardRect.top) / this.zoomLevel;
+            // Get the card's CURRENT position in the board
+            const computedLeft = parseFloat(card.style.left || 0);
+            const computedTop = parseFloat(card.style.top || 0);
 
-            // Set the card's position to absolute with these calculated values
-            card.style.position = 'absolute';
-            card.style.left = `${cardLeft}px`;
-            card.style.top = `${cardTop}px`;
+            // If left/top are not set yet (card is static positioned?), compute them
+            if (isNaN(computedLeft) || isNaN(computedTop)) {
+                const cardLeft = (cardRect.left - boardRect.left) / this.zoomLevel;
+                const cardTop = (cardRect.top - boardRect.top) / this.zoomLevel;
+                card.style.position = 'absolute';
+                card.style.left = `${cardLeft}px`;
+                card.style.top = `${cardTop}px`;
+            }
 
-            // Calculate the mouse offset relative to the card
-            this.offsetX = (event.clientX - cardRect.left) / this.zoomLevel;
-            this.offsetY = (event.clientY - cardRect.top) / this.zoomLevel;
+            // Now safely calculate offset
+            const updatedCardRect = card.getBoundingClientRect();
+            this.offsetX = (event.clientX - updatedCardRect.left) / this.zoomLevel;
+            this.offsetY = (event.clientY - updatedCardRect.top) / this.zoomLevel;
         }
     }
 
