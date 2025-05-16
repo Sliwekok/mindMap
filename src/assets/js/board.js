@@ -170,15 +170,20 @@ class Board {
             }
         });
 
-        this.board.querySelector('.card-content').addEventListener('keydown', (event) => {
-            this.setNewTextareaSize(event.target);
+        this.board.addEventListener('keydown', (event) => {
+            const cardContent = event.target.closest('.card-content');
+            if (cardContent) {
+                this.setNewTextareaSize(cardContent);
+            }
         });
 
-        this.board.querySelector('.card-content').addEventListener('paste', (event) => {
-            // Delay the size adjustment until after the paste content is inserted
-            setTimeout(() => this.setNewTextareaSize(event.target), 0);
+        this.board.addEventListener('paste', (event) => {
+            const cardContent = event.target.closest('.card-content');
+            if (cardContent) {
+                // Delay the size adjustment until after the paste content is inserted
+                setTimeout(() => this.setNewTextareaSize(cardContent), 0);
+            }
         });
-
         // add card linking and relations
         this.board.addEventListener('click', (event) => {
             const linkIcon = event.target.closest('.link');
@@ -270,44 +275,45 @@ class Board {
             const boardRect = this.board.getBoundingClientRect();
             const cardRect = card.getBoundingClientRect();
 
-            // Get the card's CURRENT position in the board
-            const computedLeft = parseFloat(card.style.left || 0);
-            const computedTop = parseFloat(card.style.top || 0);
+            // Get card's position in board space (in logical px, unscaled)
+            const computedLeft = parseFloat(card.style.left) || 0;
+            const computedTop = parseFloat(card.style.top) || 0;
 
-            // If left/top are not set yet (card is static positioned?), compute them
-            if (isNaN(computedLeft) || isNaN(computedTop)) {
-                const cardLeft = (cardRect.left - boardRect.left) / this.zoomLevel;
-                const cardTop = (cardRect.top - boardRect.top) / this.zoomLevel;
-                card.style.position = 'absolute';
-                card.style.left = `${cardLeft}px`;
-                card.style.top = `${cardTop}px`;
-            }
+            // Calculate cursor offset inside the card (in unscaled units)
+            const mouseXInBoard = (event.clientX - boardRect.left) / this.zoomLevel;
+            const mouseYInBoard = (event.clientY - boardRect.top) / this.zoomLevel;
 
-            // Now safely calculate offset
-            const updatedCardRect = card.getBoundingClientRect();
-            this.offsetX = (event.clientX - updatedCardRect.left) / this.zoomLevel;
-            this.offsetY = (event.clientY - updatedCardRect.top) / this.zoomLevel;
+            this.offsetX = mouseXInBoard - computedLeft;
+            this.offsetY = mouseYInBoard - computedTop;
         }
     }
 
     drag(event) {
         if (this.isDragging && this.currentCard) {
-            // Calculate the new card position relative to the board
             const boardRect = this.board.getBoundingClientRect();
-            const newLeft = (event.clientX - boardRect.left) / this.zoomLevel - this.offsetX;
-            const newTop = (event.clientY - boardRect.top) / this.zoomLevel - this.offsetY;
 
-            // Apply the new position to the card
+            // Calculate mouse position relative to board (unscaled)
+            const mouseXInBoard = (event.clientX - boardRect.left) / this.zoomLevel;
+            const mouseYInBoard = (event.clientY - boardRect.top) / this.zoomLevel;
+
+            const newLeft = mouseXInBoard - this.offsetX;
+            const newTop = mouseYInBoard - this.offsetY;
+
+            // Apply new position
             this.currentCard.style.left = `${newLeft}px`;
             this.currentCard.style.top = `${newTop}px`;
 
-            let changedCard = this.cards.find(card => card.id === this.currentCard.id);
-            changedCard.styles.left = `${newLeft}px`;
-            changedCard.styles.top = `${newTop}px`;
+            // Update internal state
+            const changedCard = this.cards.find(card => card.id === this.currentCard.id);
+            if (changedCard) {
+                changedCard.styles.left = `${newLeft}px`;
+                changedCard.styles.top = `${newTop}px`;
+            }
 
             this.updateAllLines();
         }
     }
+
 
     endDrag() {
         this.isDragging = false;
